@@ -1,5 +1,5 @@
 
-(* RUNNING TIME  FOR ALL PROPERTIES: 30 minutes *)
+(* RUNNING TIME  FOR ALL PROPERTIES: 60 minutes *)
 
 free cuser, cout, card, term, bank: channel.
 
