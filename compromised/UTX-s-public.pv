@@ -1,0 +1,349 @@
+free cuser, cout, card, term, bank: channel.
+
+free user: channel [private].
+
+type point. (* ecc public key *)
+type scalar. (* ecc secret key *)
+
+type key. (* for enc *)
+
+type sskey. (* generic sign-verify skey *)
+type pskey. (* generic sign-verify pkey *)
+type svkey. (* verhul sign-verify skey *)
+type pvkey. (* verhul sign-verify pkey *)
+
+type pkey. (* aenc key *)
+type skey. (* adec key *)
+
+type transaction.
+type text.
+
+
+const R: point [data].
+
+(* CONSTANTS TO IDENTIFY VARIOUS TYPES OF TRANSACTION *)
+const OK, NO,HI,LO, MM, ONLINE, OFFLINE: text [data].
+
+fun smult(scalar, point): point.
+fun h(point): key.
+fun pks(sskey): pskey. (* generic sig ver key *)
+fun pkv(svkey): pvkey. (* verheul sig ver key *)
+fun pk(skey): pkey. (* aenc public key *)
+
+fun enc(bitstring, key): bitstring.
+fun aenc(bitstring, pkey): bitstring.
+fun sign(bitstring, sskey): bitstring. (* generic sig *)
+fun vsign(point, svkey): point. (* verheul sig *)
+
+fun mac(bitstring, key): bitstring.
+
+reduc forall m: bitstring, k: key; dec(enc(m, k), k) = m.
+
+(* GENERIC SIGNATURE *)
+reduc forall x: bitstring, sk: sskey; check(sign(x, sk), pks(sk)) = x.
+
+(* VERHEUL BLIND SIGNATURE *)
+reduc forall pt: point, svk: svkey;           vcheck(vsign(pt, svk), pkv(svk)) = pt;
+    forall a: scalar, pt: point, svk: svkey;  vcheck(smult(a, vsign(pt, svk)), pkv(svk)) = smult(a, pt).
+
+(*)
+equation forall a: scalar, pt: point, svk: svkey;
+  smult(a, vsign(pt, svk)) = vsign( smult(a, pt), svk ).
+*)
+
+(* ASYMMETRIC ENCRYPTION *)
+reduc forall m: bitstring, k: skey; adec(aenc(m, pk(k)), k) = m.
+
+(* SCALAR MULTIPLICATION EQUATIONS *)
+equation forall a: scalar, b: scalar;
+smult(a, smult(b, R)) = smult(b, smult(a, R)).
+equation forall a: scalar, b: scalar, c: scalar;
+smult(a, smult(b, smult(c, R))) = smult(b, smult(a, smult(c, R))).
+
+table si(text,text,key,point).
+
+(* CARD EVENTS *)
+event CRunning(text,key, point,point).
+event CAccept(text, bitstring). (* CARD WITH PAN ACCEPTS A TRANSACTION *)
+event CReject(text, bitstring). (* CARD WITH PAN REJECTS A TRANSACTION *)
+event CCompromised(text). (* CARD IS COMPROMISED *)
+
+(* TERMINAL EVENTS *)
+event TRunningTX(key, bitstring). (* kbt, TX *)
+event TRunning(key, key, point, point, bitstring). (* kbt, k, z1, z2, TX *)
+event TCommitWithCard(key, key, point, point, bitstring). (* kbt, k, z1, z2, TX *)
+event TCommit(key, key, point, point, bitstring). (* kbt, k, z1, z2, TX *)
+event TAccept(key, bitstring). (* kbt, TX *)
+event TReject(key, bitstring). (* kbt, TX *)
+event TCompromised(key). (* TERMINAL IS COMPROMISED *)
+
+(* BANK EVENTS *)
+event BRunning(key,  bitstring). (* kbt, TX *)
+event BCommit(key, bitstring, text). (* BANK CONNECTED TO CARD AND TERMINAL *)
+event BAccept(text, bitstring).  (* BANK ACCEPTS A TRANSACTION FOR PAN *)
+event BReject(text, bitstring).  (* BANK REJECTS A TRANSACTION FOR PAN *)
+
+(* TESTING EVENTS *)
+event SharedBankCard(key).
+event SharedCardBank(text, key).
+event TestT(bitstring).
+event TestC(bitstring).
+
+event ProcessingTransation(bitstring,bitstring).
+event TerminalProcessingTransaction(bitstring,bitstring).
+event TERM_CARD_TX_PIN(bitstring, text).
+event TERM_BANK_TX_PIN(bitstring, text).
+
+(* EVERY TRANSACTION CAN BE TREATED AT MOST ONCE *)
+axiom sessNonce1, sessNonce2:bitstring, TX: bitstring;
+  event (ProcessingTransation(sessNonce1, TX)) && event (ProcessingTransation(sessNonce2, TX))
+    ==> sessNonce1 = sessNonce2.
+
+axiom sessNonce1, sessNonce2:bitstring, TX: bitstring;
+      event (TerminalProcessingTransaction(sessNonce1, TX))
+      && event (TerminalProcessingTransaction(sessNonce2, TX))
+        ==> sessNonce1 = sessNonce2.
+
+(* SAME PIN TRANSMITTED TO CARD AND TO BANK *)
+axiom PIN1, PIN2:text, TX: bitstring;
+              event (TERM_CARD_TX_PIN(TX, PIN1))
+              && event (TERM_BANK_TX_PIN(TX, PIN2))
+                ==> PIN1 = PIN2.
+
+
+(* AUTHENTICATION PROPERTIES *)
+
+(* AUTHENTICATION OF THE CARD TO THE TERMINAL - FASTER VERSION *)
+query kbt:key,TX:bitstring, k:key, PAN:text, Z1,Z2: point;
+  inj-event( TCommitWithCard(kbt,k,Z1,Z2,TX)) ==>
+    inj-event( CRunning(PAN,k,Z1,Z2)).
+    (* NOTE: USING TCommitWithCard IS STRONGER THAN TCommit SINCE IT OCCURS EARLIER;
+      THIS VERSION RUNS FASTER THAN THE COMMENTED PROPERTY BELOW *)
+
+(* AUTHENTICATION OF THE CARD TO THE TERMINAL *)
+(*      query kbt:key,TX:bitstring, k:key, PAN:text, Z1,Z2: point;
+        inj-event( TCommit(kbt,k,Z1,Z2,TX)) ==>
+          inj-event( CRunning(PAN,k,Z1,Z2)).
+*)
+
+(* AUTHENTICATION OF THE BANK TO THE TERMINAL *)
+ query kbt:key,TX:bitstring, k:key, PAN:text, Z1,Z2: point;
+    inj-event( TCommit(kbt,k,Z1,Z2,TX)) ==> inj-event( BRunning(kbt,TX)).
+
+(*) AUTHENTICATION OF THE CARD TO THE BANK  *)
+query kbt:key, TX:bitstring, PAN:text, k:key, Z1,Z2: point;
+    inj-event( BCommit(kbt, TX, PAN)) ==> inj-event( CRunning(PAN,k, Z1,Z2)). (*) || event (CCompromised(PAN)).*)
+
+(*) AUTHENTICATION OF THE TERMINAL TO THE BANK - FASTER VERSION *)
+query kbt:key, TX:bitstring, PAN: text, k:key, Z1,Z2: point;
+    inj-event( BCommit(kbt, TX, PAN)) ==>
+      inj-event( TRunningTX(kbt, TX)) || event (TCompromised(kbt)).
+      (* NOTE: USING TRunningTX IS STRONGER THAN TRunning SINCE IT OCCURS EARLIER;
+        THIS VERSION RUNS FASTER THAN THE COMMENTED PROPERTY BELOW *)
+
+(*) AUTHENTICATION OF THE TERMINAL TO THE BANK *)
+(* query kbt:key, TX:bitstring, PAN: text, k:key, Z1,Z2: point;
+    inj-event( BCommit(kbt, TX, PAN)) ==>
+            inj-event( TRunning(kbt, k, Z1, Z2, TX))
+              || event (TCompromised(kbt)). *)
+
+(* TRANSACTION SECURITY PROPERTY *)
+
+(* IF THE TERMINAL ACCEPTS A TRANSACTION, THE BANK WILL NOT REJECT IT *)
+  query kbt: key, TX: bitstring, PAN:text; event( TAccept(kbt, TX)) && (event (BReject(PAN,TX)))
+      ==> false .
+
+(* SECRECY PROPERTIES *)
+event SecretKey(key).
+event SecretAC(bitstring).
+event SecretPin(text).
+event PinInCorrTerminal(text).
+query x:key; event(SecretKey(x)) && attacker(x) ==> false.
+query x:bitstring; event(SecretAC(x)) && attacker(x) ==> false.
+query x:text; event(SecretPin(x)) && attacker(x) ==> event(PinInCorrTerminal(x)).
+
+(* EXECUTABILITY *)
+query kbt:key, PAN: text, TX: bitstring;
+    event(CAccept(PAN, TX)) && event(BAccept(PAN,TX)) && event (TAccept(kbt,TX)).
+
+query kbt:key, TX:bitstring, PAN: text, k:key, Z1,Z2: point;
+         event( TCommit(kbt,k,Z1,Z2,TX)) && event( CRunning(PAN,k,Z1,Z2))
+          && event (BCommit(kbt, TX, PAN)).
+
+
+(************* CARD PROCESSES ***************)
+let CardStartSession(PAN: text,PIN: text, mk: key, pkS: pskey, crt: point, c: scalar) =
+  in(card, Z1: point);
+  let PKC = smult(c, R) in
+  new a: scalar;
+  let Z2:point = smult(a, PKC) in
+  out(card,Z2);
+  let k:key = h(smult(a, smult(c, Z1))) in (* key is established *)
+  event CRunning(PAN,k,Z1,Z2); event SecretPin(PIN); event SecretKey(mk);
+  event TestC((k,Z1,Z2));
+  in(card, EMC: bitstring);
+  let MC = dec(EMC, k) in
+  let ((=MM,pkBT: point), sigPS: bitstring) = MC in
+  if check(sigPS, pkS) = (MM, pkBT) then
+  let M = (smult(a, PKC), smult(a, crt)) in
+  out(card, enc(M,k));
+
+  (* transaction *)
+  in(card, ETX: bitstring);
+  let (TX:bitstring,uPin:text) = dec(ETX, k) in
+  let (TXdata:transaction,TXtype:text) = TX in
+
+  (* let AC = (a,PAN, TX, OK) in  *)
+  let ACok = (a,PAN, TX, OK) in
+  let ACno = (a,PAN, TX, NO) in
+  event SecretAC(ACok);
+
+  let ACok_mac = mac(ACok, mk) in
+  let ACno_mac = mac(ACno, mk) in
+
+  let shk = h(smult(a,smult(c, pkBT))) in
+
+  event SharedCardBank(PAN, shk);
+
+  if (TXtype = HI && uPin = PIN) || (TXtype = LO) then
+    ( let EAC = enc((ACok, ACok_mac), shk) in
+      event TestC((k,Z1,Z2, EAC));
+      event CAccept(PAN, TX);
+      out(card, enc((TX,OK, EAC), k))
+    )
+    else
+    ( let EAC = enc((ACno, ACno_mac), shk) in
+      event TestC((k,Z1,Z2, EAC));
+      event CReject(PAN, TX);
+      out(card, enc((TX,NO, EAC), k))
+    ).
+
+
+(********* TERMINAL PROCESSES *****************)
+
+let TerminalStartSession(TXtype:text, CONNECTIONtype:text,
+                        user:channel, pkMM: pvkey, crt:bitstring, kbt: key) =
+  new TXdata: bitstring;
+  let TX = (TXdata, TXtype) in
+  event TRunningTX(kbt,TX);
+  new t: scalar;
+  let Z1 = smult(t, R) in
+  out(term, Z1);
+  in(term, Z2: point);
+  let k = h(smult(t, Z2)) in (* key is established *)
+  event TRunning(kbt,k,Z1,Z2,TX);
+  out(term, enc(crt, k));
+  in(term, EM: bitstring);
+  let (M1: point, M2: point) = dec(EM, k) in
+  if (M1 = vcheck(M2, pkMM)) && (M1 = Z2) then
+
+  (* AUTHORIZE TRANSACTION *)
+  in(user,uPIN:text); event TERM_CARD_TX_PIN(TX, uPIN);
+  out(term, enc((TX,uPIN), k));
+
+  in(term, EEAC: bitstring);
+  let (=TX, Creply: text, EAC: bitstring) = dec(EEAC, k) in
+  event TestT((k,Z1,Z2, EAC));
+  event TCommitWithCard(kbt,k,Z1,Z2,TX);
+
+  new nonce:bitstring;
+  event TerminalProcessingTransaction(nonce, TX);
+  event TERM_BANK_TX_PIN(TX, uPIN);
+  out(term, enc((TX, Z2, EAC, uPIN), kbt));
+
+  if CONNECTIONtype = OFFLINE && Creply = OK
+  then ( event TAccept(kbt, TX) )
+
+  else if CONNECTIONtype = OFFLINE && Creply = NO
+  then ( event TReject(kbt, TX) )
+
+  else (* WE HAVE CONNECTIONtype = ONLINE *)
+  (
+    in(term, EReply: bitstring);
+    let (=TX,reply:text) = dec(EReply, kbt) in
+    event TCommit(kbt,k,Z1,Z2,TX);
+    if (reply = OK) then event TAccept(kbt, TX)
+  ).
+
+
+let Terminal(user:channel, pkMM: pvkey, crt:bitstring, kbt: key)  =
+    TerminalStartSession(HI, ONLINE, user, pkMM, crt, kbt) |
+    TerminalStartSession(LO, ONLINE, user, pkMM, crt, kbt) |
+    TerminalStartSession(HI, OFFLINE, user, pkMM, crt, kbt).
+
+
+(* BANK PROCESSES *)
+let BankProcessTransaction(kbt:key, bt: scalar) =
+new sessNonce:bitstring;
+  in(bank, x: bitstring);
+  let (TX':bitstring,Z2:point,EAC:bitstring,uPIN:text) = dec(x, kbt) in
+  event ProcessingTransation(sessNonce, TX'); (* NOTE: THIS MODELS THE FRESHNESS CHECK *)
+  event BRunning(kbt, TX');
+  let kbc = h(smult(bt, Z2)) in
+
+  let y:bitstring = dec(EAC, kbc) in
+  event SharedBankCard(kbc);
+
+  let (AC:bitstring,ACmac:bitstring) = y in
+  let (xa:scalar, PAN:text, TX:bitstring, pinV:text) = AC in
+
+(*)  event BCommit(kbt, TX, PAN);*) (* NOTE: COMMITMENT WITH TERMINAL HERE MAY BE FASTER *)
+
+  get si(=PAN, PIN: text, mk: key, pkC: point) in
+  if (mac(AC, mk) = ACmac) && (TX=TX')
+  then
+  (
+  event BCommit(kbt, TX, PAN);
+
+  if smult(xa, pkC) = Z2 then
+    (
+    let (TXdata:transaction,TXtype:text) = TX in
+    if TXtype = LO then
+    ( event BAccept(PAN, TX); out(bank, enc((TX,OK), kbt)) )
+    else
+    if TXtype = HI then
+        if (pinV = OK) || (uPIN = PIN) then
+        ( event BAccept(PAN, TX); out(bank, enc((TX,OK), kbt)) )
+        else
+        (
+          event BReject(PAN,TX);
+          out(term, enc((TX, NO), kbt))
+          )
+    else (
+      event BReject(PAN,TX);
+      out(term, enc((TX, NO), kbt))
+        )
+      )
+    ).
+
+let CompromisedTerminal(s:sskey, bt:scalar) =
+      in(cout,kbtC:key); event TCompromised(kbtC); (* COMPROMISED TERMINALS *)
+      ( ! BankProcessTransaction(kbtC, bt) |
+        let crtT = ((MM, smult(bt, R)), sign((MM, smult(bt, R)), s)) in
+          out(cout, crtT)
+      ).
+
+process
+    new s: sskey; new chiMM: svkey;
+    out(cout, s); (* SIGNING KEY S IS PUBLIC *)
+    out(cout, pks(s)); out(cout, pkv(chiMM));
+    (
+      (* CARDS AND CARD SESSIONS *)
+      ! (new PIN: text; new mk: key; new c: scalar; new PAN: text;
+        let crtC = vsign(smult(c,R), chiMM) in
+        (* CARD PAYMENT SESSIONS  *)
+        ! CardStartSession(PAN, PIN, mk, pks(s), crtC, c)
+        (* STORE INFORMATION RELEVANT FOR THE CARD TO BE USED BY USER AND BANK *)
+        | ! out(user, PIN) | ! (event PinInCorrTerminal(PIN); out(cuser, PIN))
+          |  insert si(PAN, PIN, mk, smult(c,R))
+        )
+      |
+      (* BANKS, TERMINALS AND THEIR SESSIONS *)
+      new bt: scalar;
+      ( ! new kbt:key; (* PAYMENT SESSIONS *)
+        (  BankProcessTransaction(kbt, bt) |
+          let crtT = ((MM, smult(bt, R)), sign((MM, smult(bt, R)), s)) in
+             Terminal(user, pkv(chiMM), crtT, kbt)
+        ) )
+      | ! CompromisedTerminal(s, bt)
+    )
