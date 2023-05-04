@@ -1,0 +1,1353 @@
+Linear part:
+smult(a,smult(b,R)) = smult(b,smult(a,R))
+smult(a,smult(b,smult(c,R))) = smult(b,smult(a,smult(c,R)))
+Completing equations...
+Completed equations:
+smult(c,smult(a,smult(b,R))) = smult(b,smult(a,smult(c,R)))
+smult(a,smult(a_1,smult(b,R))) = smult(b,smult(a,smult(a_1,R)))
+smult(a,smult(b,smult(b_1,R))) = smult(b,smult(b_1,smult(a,R)))
+smult(a,smult(b,smult(c,R))) = smult(b,smult(a,smult(c,R)))
+smult(a,smult(b,R)) = smult(b,smult(a,R))
+Convergent part: No equation.
+Process 0 (that is, the initial process):
+{1}new s: sskey;
+{2}new chiMM: svkey;
+{3}out(cout, pks(s));
+{4}out(cout, pkv(chiMM));
+(
+    {5}!
+    {6}new PIN: text;
+    {7}new mk: key;
+    {8}new c: scalar;
+    {9}new PAN: text;
+    {10}out(cout, PIN);
+    {11}let crtC: point = vsign(smult(c,R),chiMM) in
+    (
+        {12}!
+        {13}let PAN_1: text = PAN in
+        {14}let PIN_1: text = PIN in
+        {15}let mk_1: key = mk in
+        {16}let pkS: pskey = pks(s) in
+        {17}let c_1: scalar = c in
+        {18}in(card, Z1: point);
+        {19}let PKC: point = smult(c_1,R) in
+        {20}new a: scalar;
+        {21}let Z2: point = smult(a,PKC) in
+        {22}out(card, Z2);
+        {23}let k: key = h(smult(a,smult(c_1,Z1))) in
+        {24}event SecretPin(PIN_1);
+        {25}event SecretKey(mk_1);
+        {26}in(card, EMC: bitstring);
+        {27}let MC: bitstring = dec(EMC,k) in
+        {28}let ((=MM,pkBT: point),sigPS: bitstring) = MC in
+        {29}if (check(sigPS,pkS) = (MM,pkBT)) then
+        {30}let M: bitstring = (smult(a,PKC),smult(a,crtC)) in
+        {31}out(card, enc(M,k));
+        {32}in(card, ETX: bitstring);
+        {33}let (TX: bitstring,uPin: text) = dec(ETX,k) in
+        {34}let (TXdata: transaction,TXtype: text) = TX in
+        {35}let ACok: bitstring = (a,PAN_1,TX,OK) in
+        {36}let ACno: bitstring = (a,PAN_1,TX,NO) in
+        {37}event SecretAC(ACok);
+        {38}let ACok_mac: bitstring = mac(ACok,mk_1) in
+        {39}let ACno_mac: bitstring = mac(ACno,mk_1) in
+        {40}let shk: key = h(smult(a,smult(c_1,pkBT))) in
+        {41}if (((TXtype = HI) && (uPin = PIN_1)) || (TXtype = LO)) then
+        (
+            {42}let EAC: bitstring = enc((ACok,ACok_mac),shk) in
+            {43}event CAccept(PAN_1,TX);
+            {44}event CRunning(Z1,Z2,EMC,enc(M,k),ETX,enc((TX,OK,EAC),k));
+            {45}event CRunningWithBank(a,PAN_1,TX,EAC);
+            {46}out(card, enc((TX,OK,EAC),k))
+        )
+        else
+            {47}let EAC_1: bitstring = enc((ACno,ACno_mac),shk) in
+            {48}event CRunning(Z1,Z2,EMC,enc(M,k),ETX,enc((TX,NO,EAC_1),k));
+            {49}event CRunningWithBank(a,PAN_1,TX,EAC_1);
+            {50}out(card, enc((TX,NO,EAC_1),k))
+    ) | (
+        {51}!
+        {52}out(user, PIN)
+    ) | (
+        {53}insert si(PAN,PIN,mk,smult(c,R))
+    )
+) | (
+    {54}new bt: scalar;
+    {55}out(cout, ((MM,smult(bt,R)),sign((MM,smult(bt,R)),s)));
+    {56}!
+    {57}let kbt_1: key = kbt in
+    {58}let bt_1: scalar = bt in
+    {59}in(bank, x: bitstring);
+    {60}let (TX': bitstring,Z2_1: point,EAC_2: bitstring,uPIN: text) = dec(x,kbt_1) in
+    {61}new sessNonce: bitstring;
+    {62}event ProcessingTransation(sessNonce,TX');
+    {63}let kbc: key = h(smult(bt_1,Z2_1)) in
+    {64}let y: bitstring = dec(EAC_2,kbc) in
+    {65}let (AC: bitstring,ACmac: bitstring) = y in
+    {66}let (xa: scalar,PAN_2: text,TX_1: bitstring,pinV: text) = AC in
+    {93}get si(=PAN_2,PIN_2: text,mk_2: key,pkC: point) in
+    {67}if ((mac(AC,mk_2) = ACmac) && (TX_1 = TX')) then
+    {68}if (smult(xa,pkC) = Z2_1) then
+    {69}let (TXdata_1: transaction,TXtype_1: text) = TX_1 in
+    {70}if (TXtype_1 = LO) then
+        {71}event BAccept(kbt_1,PAN_2,TX_1);
+        {72}event BRunningWithT(x,enc((TX_1,ACCEPT),kbt_1));
+        {73}event BCommitWithTC(x);
+        {74}event BCommitWithC(xa,PAN_2,TX_1,EAC_2);
+        {75}out(bank, enc((TX_1,ACCEPT),kbt_1))
+    else
+        {76}if (TXtype_1 = HI) then
+        (
+            {77}if ((pinV = OK) || (uPIN = PIN_2)) then
+                {78}event BAccept(kbt_1,PAN_2,TX_1);
+                {79}event BRunningWithT(x,enc((TX_1,ACCEPT),kbt_1));
+                {80}event BCommitWithTC(x);
+                {81}event BCommitWithC(xa,PAN_2,TX_1,EAC_2);
+                {82}out(bank, enc((TX_1,ACCEPT),kbt_1))
+            else
+                {83}event BReject(kbt_1,TX_1);
+                {84}event BRunningWithT(x,enc((TX_1,NO),kbt_1));
+                {85}event BCommitWithTC(x);
+                {86}event BCommitWithC(xa,PAN_2,TX_1,EAC_2);
+                {87}out(term, enc((TX_1,NO),kbt_1))
+        )
+        else
+            {88}event BReject(kbt_1,TX_1);
+            {89}event BRunningWithT(x,enc((TX_1,NO),kbt_1));
+            {90}event BCommitWithTC(x);
+            {91}event BCommitWithC(xa,PAN_2,TX_1,EAC_2);
+            {92}out(term, enc((TX_1,NO),kbt_1))
+)
+
+File "SUTXL-security.pv", line 155, characters 7-9:
+Warning: identifier kbt rebound.
+--  Process 1 (that is, process 0, with let moved downwards):
+{1}new s: sskey;
+{2}new chiMM: svkey;
+{3}out(cout, pks(s));
+{4}out(cout, pkv(chiMM));
+(
+    {5}!
+    {6}new PIN: text;
+    {7}new mk: key;
+    {8}new c: scalar;
+    {9}new PAN: text;
+    {10}out(cout, PIN);
+    (
+        {12}!
+        {18}in(card, Z1: point);
+        {20}new a: scalar;
+        {17}let c_1: scalar = c in
+        {19}let PKC: point = smult(c_1,R) in
+        {21}let Z2: point = smult(a,PKC) in
+        {22}out(card, Z2);
+        {14}let PIN_1: text = PIN in
+        {24}event SecretPin(PIN_1);
+        {15}let mk_1: key = mk in
+        {25}event SecretKey(mk_1);
+        {26}in(card, EMC: bitstring);
+        {23}let k: key = h(smult(a,smult(c_1,Z1))) in
+        {27}let MC: bitstring = dec(EMC,k) in
+        {28}let ((=MM,pkBT: point),sigPS: bitstring) = MC in
+        {16}let pkS: pskey = pks(s) in
+        {29}if (check(sigPS,pkS) = (MM,pkBT)) then
+        {11}let crtC: point = vsign(smult(c,R),chiMM) in
+        {30}let M: bitstring = (smult(a,PKC),smult(a,crtC)) in
+        {31}out(card, enc(M,k));
+        {32}in(card, ETX: bitstring);
+        {33}let (TX: bitstring,uPin: text) = dec(ETX,k) in
+        {34}let (TXdata: transaction,TXtype: text) = TX in
+        {13}let PAN_1: text = PAN in
+        {35}let ACok: bitstring = (a,PAN_1,TX,OK) in
+        {37}event SecretAC(ACok);
+        {40}let shk: key = h(smult(a,smult(c_1,pkBT))) in
+        {41}if (((TXtype = HI) && (uPin = PIN_1)) || (TXtype = LO)) then
+        (
+            {43}event CAccept(PAN_1,TX);
+            {38}let ACok_mac: bitstring = mac(ACok,mk_1) in
+            {42}let EAC: bitstring = enc((ACok,ACok_mac),shk) in
+            {44}event CRunning(Z1,Z2,EMC,enc(M,k),ETX,enc((TX,OK,EAC),k));
+            {45}event CRunningWithBank(a,PAN_1,TX,EAC);
+            {46}out(card, enc((TX,OK,EAC),k))
+        )
+        else
+            {36}let ACno: bitstring = (a,PAN_1,TX,NO) in
+            {39}let ACno_mac: bitstring = mac(ACno,mk_1) in
+            {47}let EAC_1: bitstring = enc((ACno,ACno_mac),shk) in
+            {48}event CRunning(Z1,Z2,EMC,enc(M,k),ETX,enc((TX,NO,EAC_1),k));
+            {49}event CRunningWithBank(a,PAN_1,TX,EAC_1);
+            {50}out(card, enc((TX,NO,EAC_1),k))
+    ) | (
+        {51}!
+        {52}out(user, PIN)
+    ) | (
+        {53}insert si(PAN,PIN,mk,smult(c,R))
+    )
+) | (
+    {54}new bt: scalar;
+    {55}out(cout, ((MM,smult(bt,R)),sign((MM,smult(bt,R)),s)));
+    {56}!
+    {59}in(bank, x: bitstring);
+    {57}let kbt_1: key = kbt in
+    {60}let (TX': bitstring,Z2_1: point,EAC_2: bitstring,uPIN: text) = dec(x,kbt_1) in
+    {61}new sessNonce: bitstring;
+    {62}event ProcessingTransation(sessNonce,TX');
+    {58}let bt_1: scalar = bt in
+    {63}let kbc: key = h(smult(bt_1,Z2_1)) in
+    {64}let y: bitstring = dec(EAC_2,kbc) in
+    {65}let (AC: bitstring,ACmac: bitstring) = y in
+    {66}let (xa: scalar,PAN_2: text,TX_1: bitstring,pinV: text) = AC in
+    {93}get si(=PAN_2,PIN_2: text,mk_2: key,pkC: point) in
+    {67}if ((mac(AC,mk_2) = ACmac) && (TX_1 = TX')) then
+    {68}if (smult(xa,pkC) = Z2_1) then
+    {69}let (TXdata_1: transaction,TXtype_1: text) = TX_1 in
+    {70}if (TXtype_1 = LO) then
+        {71}event BAccept(kbt_1,PAN_2,TX_1);
+        {72}event BRunningWithT(x,enc((TX_1,ACCEPT),kbt_1));
+        {73}event BCommitWithTC(x);
+        {74}event BCommitWithC(xa,PAN_2,TX_1,EAC_2);
+        {75}out(bank, enc((TX_1,ACCEPT),kbt_1))
+    else
+        {76}if (TXtype_1 = HI) then
+        (
+            {77}if ((pinV = OK) || (uPIN = PIN_2)) then
+                {78}event BAccept(kbt_1,PAN_2,TX_1);
+                {79}event BRunningWithT(x,enc((TX_1,ACCEPT),kbt_1));
+                {80}event BCommitWithTC(x);
+                {81}event BCommitWithC(xa,PAN_2,TX_1,EAC_2);
+                {82}out(bank, enc((TX_1,ACCEPT),kbt_1))
+            else
+                {83}event BReject(kbt_1,TX_1);
+                {84}event BRunningWithT(x,enc((TX_1,NO),kbt_1));
+                {85}event BCommitWithTC(x);
+                {86}event BCommitWithC(xa,PAN_2,TX_1,EAC_2);
+                {87}out(term, enc((TX_1,NO),kbt_1))
+        )
+        else
+            {88}event BReject(kbt_1,TX_1);
+            {89}event BRunningWithT(x,enc((TX_1,NO),kbt_1));
+            {90}event BCommitWithTC(x);
+            {91}event BCommitWithC(xa,PAN_2,TX_1,EAC_2);
+            {92}out(term, enc((TX_1,NO),kbt_1))
+)
+
+-- Axiom event(ProcessingTransation(sessNonce1,TX_2)) && event(ProcessingTransation(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
+-- Axiom event(TerminalProcessingTransaction(sessNonce1,TX_2)) && event(TerminalProcessingTransaction(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
+-- Axiom event(TERM_CARD_TX_PIN(TX_2,PIN1)) && event(TERM_BANK_TX_PIN(TX_2,PIN2)) ==> PIN1 = PIN2 in process 1.
+-- Query inj-event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) ==> inj-event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 200 rules (39 with conclusion selected). Queue: 675 rules.
+400 rules inserted. Base: 400 rules (39 with conclusion selected). Queue: 675 rules.
+600 rules inserted. Base: 600 rules (44 with conclusion selected). Queue: 671 rules.
+800 rules inserted. Base: 799 rules (48 with conclusion selected). Queue: 661 rules.
+1000 rules inserted. Base: 999 rules (48 with conclusion selected). Queue: 661 rules.
+1200 rules inserted. Base: 1199 rules (48 with conclusion selected). Queue: 661 rules.
+1400 rules inserted. Base: 1396 rules (50 with conclusion selected). Queue: 656 rules.
+1600 rules inserted. Base: 1596 rules (50 with conclusion selected). Queue: 658 rules.
+1800 rules inserted. Base: 1796 rules (50 with conclusion selected). Queue: 673 rules.
+2000 rules inserted. Base: 1992 rules (50 with conclusion selected). Queue: 696 rules.
+2200 rules inserted. Base: 2192 rules (50 with conclusion selected). Queue: 724 rules.
+2400 rules inserted. Base: 2386 rules (50 with conclusion selected). Queue: 1019 rules.
+2600 rules inserted. Base: 2568 rules (50 with conclusion selected). Queue: 1172 rules.
+2800 rules inserted. Base: 2768 rules (50 with conclusion selected). Queue: 1393 rules.
+3000 rules inserted. Base: 2965 rules (50 with conclusion selected). Queue: 1477 rules.
+3200 rules inserted. Base: 3160 rules (50 with conclusion selected). Queue: 1581 rules.
+3400 rules inserted. Base: 3330 rules (50 with conclusion selected). Queue: 1648 rules.
+3600 rules inserted. Base: 3500 rules (50 with conclusion selected). Queue: 1732 rules.
+3800 rules inserted. Base: 3592 rules (50 with conclusion selected). Queue: 1881 rules.
+4000 rules inserted. Base: 3685 rules (50 with conclusion selected). Queue: 1892 rules.
+4200 rules inserted. Base: 3880 rules (50 with conclusion selected). Queue: 2186 rules.
+4400 rules inserted. Base: 4080 rules (50 with conclusion selected). Queue: 2762 rules.
+4600 rules inserted. Base: 4258 rules (50 with conclusion selected). Queue: 2758 rules.
+4800 rules inserted. Base: 4423 rules (50 with conclusion selected). Queue: 2741 rules.
+5000 rules inserted. Base: 4590 rules (50 with conclusion selected). Queue: 2629 rules.
+5200 rules inserted. Base: 4767 rules (50 with conclusion selected). Queue: 2504 rules.
+5400 rules inserted. Base: 4914 rules (51 with conclusion selected). Queue: 2663 rules.
+5600 rules inserted. Base: 5039 rules (53 with conclusion selected). Queue: 2813 rules.
+5800 rules inserted. Base: 5192 rules (54 with conclusion selected). Queue: 2822 rules.
+6000 rules inserted. Base: 5348 rules (54 with conclusion selected). Queue: 2743 rules.
+6200 rules inserted. Base: 5548 rules (54 with conclusion selected). Queue: 2543 rules.
+6400 rules inserted. Base: 5748 rules (54 with conclusion selected). Queue: 2343 rules.
+6600 rules inserted. Base: 5948 rules (54 with conclusion selected). Queue: 2143 rules.
+6800 rules inserted. Base: 6148 rules (54 with conclusion selected). Queue: 1943 rules.
+7000 rules inserted. Base: 6348 rules (54 with conclusion selected). Queue: 1743 rules.
+7200 rules inserted. Base: 6536 rules (55 with conclusion selected). Queue: 1565 rules.
+7400 rules inserted. Base: 6634 rules (57 with conclusion selected). Queue: 1532 rules.
+7600 rules inserted. Base: 6720 rules (58 with conclusion selected). Queue: 1584 rules.
+7800 rules inserted. Base: 6816 rules (59 with conclusion selected). Queue: 1611 rules.
+8000 rules inserted. Base: 6965 rules (60 with conclusion selected). Queue: 1490 rules.
+8200 rules inserted. Base: 7112 rules (79 with conclusion selected). Queue: 1572 rules.
+8400 rules inserted. Base: 7239 rules (94 with conclusion selected). Queue: 1708 rules.
+8600 rules inserted. Base: 7432 rules (98 with conclusion selected). Queue: 1655 rules.
+8800 rules inserted. Base: 7604 rules (98 with conclusion selected). Queue: 1635 rules.
+9000 rules inserted. Base: 7740 rules (116 with conclusion selected). Queue: 1520 rules.
+9200 rules inserted. Base: 7832 rules (135 with conclusion selected). Queue: 1481 rules.
+9400 rules inserted. Base: 7895 rules (138 with conclusion selected). Queue: 1456 rules.
+9600 rules inserted. Base: 8054 rules (162 with conclusion selected). Queue: 1359 rules.
+9800 rules inserted. Base: 8212 rules (162 with conclusion selected). Queue: 1273 rules.
+10000 rules inserted. Base: 8390 rules (173 with conclusion selected). Queue: 1147 rules.
+10200 rules inserted. Base: 8576 rules (186 with conclusion selected). Queue: 1052 rules.
+10400 rules inserted. Base: 8714 rules (186 with conclusion selected). Queue: 971 rules.
+10600 rules inserted. Base: 8865 rules (198 with conclusion selected). Queue: 875 rules.
+10800 rules inserted. Base: 8990 rules (234 with conclusion selected). Queue: 792 rules.
+11000 rules inserted. Base: 9136 rules (241 with conclusion selected). Queue: 659 rules.
+11200 rules inserted. Base: 9243 rules (247 with conclusion selected). Queue: 539 rules.
+11400 rules inserted. Base: 9299 rules (247 with conclusion selected). Queue: 484 rules.
+11600 rules inserted. Base: 9473 rules (277 with conclusion selected). Queue: 530 rules.
+11800 rules inserted. Base: 9484 rules (296 with conclusion selected). Queue: 552 rules.
+12000 rules inserted. Base: 9593 rules (300 with conclusion selected). Queue: 606 rules.
+12200 rules inserted. Base: 9718 rules (307 with conclusion selected). Queue: 632 rules.
+12400 rules inserted. Base: 9839 rules (344 with conclusion selected). Queue: 794 rules.
+12600 rules inserted. Base: 9933 rules (362 with conclusion selected). Queue: 944 rules.
+12800 rules inserted. Base: 10027 rules (380 with conclusion selected). Queue: 1099 rules.
+13000 rules inserted. Base: 10221 rules (388 with conclusion selected). Queue: 1252 rules.
+13200 rules inserted. Base: 10205 rules (393 with conclusion selected). Queue: 1302 rules.
+13400 rules inserted. Base: 10366 rules (413 with conclusion selected). Queue: 1332 rules.
+13600 rules inserted. Base: 10500 rules (438 with conclusion selected). Queue: 1279 rules.
+13800 rules inserted. Base: 10643 rules (456 with conclusion selected). Queue: 1285 rules.
+14000 rules inserted. Base: 10807 rules (464 with conclusion selected). Queue: 1331 rules.
+14200 rules inserted. Base: 10973 rules (464 with conclusion selected). Queue: 1377 rules.
+14400 rules inserted. Base: 11107 rules (485 with conclusion selected). Queue: 1551 rules.
+14600 rules inserted. Base: 11245 rules (500 with conclusion selected). Queue: 1686 rules.
+14800 rules inserted. Base: 11395 rules (520 with conclusion selected). Queue: 1614 rules.
+15000 rules inserted. Base: 11555 rules (531 with conclusion selected). Queue: 1596 rules.
+15200 rules inserted. Base: 11683 rules (540 with conclusion selected). Queue: 1578 rules.
+15400 rules inserted. Base: 11750 rules (540 with conclusion selected). Queue: 1549 rules.
+15600 rules inserted. Base: 11820 rules (540 with conclusion selected). Queue: 1521 rules.
+15800 rules inserted. Base: 12009 rules (547 with conclusion selected). Queue: 1664 rules.
+16000 rules inserted. Base: 12137 rules (552 with conclusion selected). Queue: 1730 rules.
+16200 rules inserted. Base: 12218 rules (552 with conclusion selected). Queue: 1679 rules.
+16400 rules inserted. Base: 12300 rules (552 with conclusion selected). Queue: 1633 rules.
+16600 rules inserted. Base: 12389 rules (576 with conclusion selected). Queue: 1520 rules.
+16800 rules inserted. Base: 12483 rules (599 with conclusion selected). Queue: 1389 rules.
+17000 rules inserted. Base: 12617 rules (612 with conclusion selected). Queue: 1333 rules.
+17200 rules inserted. Base: 12785 rules (612 with conclusion selected). Queue: 1380 rules.
+17400 rules inserted. Base: 12953 rules (612 with conclusion selected). Queue: 1430 rules.
+17600 rules inserted. Base: 13053 rules (636 with conclusion selected). Queue: 1316 rules.
+17800 rules inserted. Base: 13151 rules (659 with conclusion selected). Queue: 1183 rules.
+18000 rules inserted. Base: 13272 rules (685 with conclusion selected). Queue: 1027 rules.
+18200 rules inserted. Base: 13389 rules (712 with conclusion selected). Queue: 880 rules.
+18400 rules inserted. Base: 13457 rules (712 with conclusion selected). Queue: 851 rules.
+18600 rules inserted. Base: 13525 rules (712 with conclusion selected). Queue: 822 rules.
+18800 rules inserted. Base: 13672 rules (743 with conclusion selected). Queue: 646 rules.
+19000 rules inserted. Base: 13777 rules (769 with conclusion selected). Queue: 501 rules.
+19200 rules inserted. Base: 13900 rules (794 with conclusion selected). Queue: 350 rules.
+19400 rules inserted. Base: 13995 rules (818 with conclusion selected). Queue: 218 rules.
+19600 rules inserted. Base: 14137 rules (852 with conclusion selected). Queue: 32 rules.
+Starting query inj-event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) ==> inj-event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3))
+200 rules inserted. Base: 200 rules (199 with conclusion selected). Queue: 201 rules.
+400 rules inserted. Base: 400 rules (399 with conclusion selected). Queue: 1 rules.
+200 rules inserted. Base: 200 rules (199 with conclusion selected). Queue: 201 rules.
+400 rules inserted. Base: 400 rules (399 with conclusion selected). Queue: 1 rules.
+goal reachable: TXtype_2 ≠ HI && TXtype_2 ≠ LO && begin(ProcessingTransation(sessNonce_1,(TXdata_2,TXtype_2))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ49_1) && attacker(TXdata_2) && attacker(TXtype_2) && attacker(uPin_1) && attacker(uPIN_1) -> end(@occ91_1,BCommitWithC(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th, 5th, 6th hypotheses occur before the conclusion.
+Abbreviations:
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+PIN_3 = PIN[!1 = @sid]
+a_1 = a[Z1 = R,!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ91_1 = @occ91[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+@occ49_1 = @occ49[ETX = enc(((TXdata_2,TXtype_2),uPin_1),h(smult(a_1,smult(c_2,R)))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(a_1,smult(c_2,R)))),Z1 = R,!2 = @sid_1,!1 = @sid]
+goal reachable: TXtype_2 ≠ HI && TXtype_2 ≠ LO && begin(ProcessingTransation(sessNonce_1,(TXdata_2,TXtype_2))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ49_1) && attacker(TXdata_2) && attacker(TXtype_2) && attacker(uPin_1) && attacker(b) && attacker(uPIN_1) -> end(@occ91_1,BCommitWithC(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th, 5th, 6th, 7th hypotheses occur before the conclusion.
+Abbreviations:
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+PIN_3 = PIN[!1 = @sid]
+a_1 = a[Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ91_1 = @occ91[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+@occ49_1 = @occ49[ETX = enc(((TXdata_2,TXtype_2),uPin_1),h(smult(b,smult(a_1,smult(c_2,R))))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(b,smult(a_1,smult(c_2,R))))),Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+goal reachable: uPin_1 ≠ PIN_3 && uPIN_1 ≠ PIN_3 && begin(ProcessingTransation(sessNonce_1,(TXdata_2,HI))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ49_1) && attacker(TXdata_2) && attacker(uPin_1) && attacker(uPIN_1) -> end(@occ86_1,BCommitWithC(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th, 5th hypotheses occur before the conclusion.
+Abbreviations:
+PIN_3 = PIN[!1 = @sid]
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+a_1 = a[Z1 = R,!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ86_1 = @occ86[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+@occ49_1 = @occ49[ETX = enc(((TXdata_2,HI),uPin_1),h(smult(a_1,smult(c_2,R)))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(a_1,smult(c_2,R)))),Z1 = R,!2 = @sid_1,!1 = @sid]
+goal reachable: uPin_1 ≠ PIN_3 && uPIN_1 ≠ PIN_3 && begin(ProcessingTransation(sessNonce_1,(TXdata_2,HI))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ49_1) && attacker(TXdata_2) && attacker(uPin_1) && attacker(b) && attacker(uPIN_1) -> end(@occ86_1,BCommitWithC(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th, 5th, 6th hypotheses occur before the conclusion.
+Abbreviations:
+PIN_3 = PIN[!1 = @sid]
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+a_1 = a[Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ86_1 = @occ86[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+@occ49_1 = @occ49[ETX = enc(((TXdata_2,HI),uPin_1),h(smult(b,smult(a_1,smult(c_2,R))))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(b,smult(a_1,smult(c_2,R))))),Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+goal reachable: begin(ProcessingTransation(sessNonce_1,(TXdata_2,HI))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),OK),mac((a_1,PAN_3,(TXdata_2,HI),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ45_1) && attacker(TXdata_2) && attacker(uPIN_1) -> end(@occ81_1,BCommitWithC(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),OK),mac((a_1,PAN_3,(TXdata_2,HI),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th hypotheses occur before the conclusion.
+Abbreviations:
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+PIN_3 = PIN[!1 = @sid]
+a_1 = a[Z1 = R,!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ81_1 = @occ81[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),OK),mac((a_1,PAN_3,(TXdata_2,HI),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),OK),mac((a_1,PAN_3,(TXdata_2,HI),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+@occ45_1 = @occ45[ETX = enc(((TXdata_2,HI),PIN_3),h(smult(a_1,smult(c_2,R)))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(a_1,smult(c_2,R)))),Z1 = R,!2 = @sid_1,!1 = @sid]
+goal reachable: begin(ProcessingTransation(sessNonce_1,(TXdata_2,HI))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),OK),mac((a_1,PAN_3,(TXdata_2,HI),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ45_1) && attacker(TXdata_2) && attacker(b) && attacker(uPIN_1) -> end(@occ81_1,BCommitWithC(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),OK),mac((a_1,PAN_3,(TXdata_2,HI),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th, 5th hypotheses occur before the conclusion.
+Abbreviations:
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+PIN_3 = PIN[!1 = @sid]
+a_1 = a[Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ81_1 = @occ81[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),OK),mac((a_1,PAN_3,(TXdata_2,HI),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),OK),mac((a_1,PAN_3,(TXdata_2,HI),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+@occ45_1 = @occ45[ETX = enc(((TXdata_2,HI),PIN_3),h(smult(b,smult(a_1,smult(c_2,R))))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(b,smult(a_1,smult(c_2,R))))),Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+goal reachable: uPin_1 ≠ PIN_3 && begin(ProcessingTransation(sessNonce_1,(TXdata_2,HI))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ49_1) && attacker(TXdata_2) && attacker(uPin_1) -> end(@occ81_1,BCommitWithC(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th hypotheses occur before the conclusion.
+Abbreviations:
+PIN_3 = PIN[!1 = @sid]
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+a_1 = a[Z1 = R,!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ81_1 = @occ81[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),PIN_3),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),PIN_3),kbt[]),!1 = @sid_2]
+@occ49_1 = @occ49[ETX = enc(((TXdata_2,HI),uPin_1),h(smult(a_1,smult(c_2,R)))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(a_1,smult(c_2,R)))),Z1 = R,!2 = @sid_1,!1 = @sid]
+goal reachable: uPin_1 ≠ PIN_3 && begin(ProcessingTransation(sessNonce_1,(TXdata_2,HI))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ49_1) && attacker(TXdata_2) && attacker(uPin_1) && attacker(b) -> end(@occ81_1,BCommitWithC(a_1,PAN_3,(TXdata_2,HI),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th, 5th hypotheses occur before the conclusion.
+Abbreviations:
+PIN_3 = PIN[!1 = @sid]
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+a_1 = a[Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ81_1 = @occ81[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),PIN_3),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),PIN_3),kbt[]),!1 = @sid_2]
+@occ49_1 = @occ49[ETX = enc(((TXdata_2,HI),uPin_1),h(smult(b,smult(a_1,smult(c_2,R))))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(b,smult(a_1,smult(c_2,R))))),Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+goal reachable: begin(ProcessingTransation(sessNonce_1,(TXdata_2,LO))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,LO),enc(((a_1,PAN_3,(TXdata_2,LO),OK),mac((a_1,PAN_3,(TXdata_2,LO),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ45_1) && attacker(TXdata_2) && attacker(uPin_1) && attacker(uPIN_1) -> end(@occ74_1,BCommitWithC(a_1,PAN_3,(TXdata_2,LO),enc(((a_1,PAN_3,(TXdata_2,LO),OK),mac((a_1,PAN_3,(TXdata_2,LO),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th, 5th hypotheses occur before the conclusion.
+Abbreviations:
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+PIN_3 = PIN[!1 = @sid]
+a_1 = a[Z1 = R,!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ74_1 = @occ74[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,LO),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,LO),OK),mac((a_1,PAN_3,(TXdata_2,LO),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,LO),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,LO),OK),mac((a_1,PAN_3,(TXdata_2,LO),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+@occ45_1 = @occ45[ETX = enc(((TXdata_2,LO),uPin_1),h(smult(a_1,smult(c_2,R)))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(a_1,smult(c_2,R)))),Z1 = R,!2 = @sid_1,!1 = @sid]
+goal reachable: begin(ProcessingTransation(sessNonce_1,(TXdata_2,LO))) && begin(CRunningWithBank(a_1,PAN_3,(TXdata_2,LO),enc(((a_1,PAN_3,(TXdata_2,LO),OK),mac((a_1,PAN_3,(TXdata_2,LO),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),@occ45_1) && attacker(TXdata_2) && attacker(uPin_1) && attacker(b) && attacker(uPIN_1) -> end(@occ74_1,BCommitWithC(a_1,PAN_3,(TXdata_2,LO),enc(((a_1,PAN_3,(TXdata_2,LO),OK),mac((a_1,PAN_3,(TXdata_2,LO),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+The 1st, 2nd hypotheses occur strictly before the conclusion.
+The 3rd, 4th, 5th, 6th hypotheses occur before the conclusion.
+Abbreviations:
+c_2 = c[!1 = @sid]
+mk_3 = mk[!1 = @sid]
+PIN_3 = PIN[!1 = @sid]
+a_1 = a[Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+PAN_3 = PAN[!1 = @sid]
+@occ74_1 = @occ74[pkC = smult(c_2,R),mk_2 = mk_3,PIN_2 = PIN_3,x = enc(((TXdata_2,LO),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,LO),OK),mac((a_1,PAN_3,(TXdata_2,LO),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,LO),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,LO),OK),mac((a_1,PAN_3,(TXdata_2,LO),OK),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+@occ45_1 = @occ45[ETX = enc(((TXdata_2,LO),uPin_1),h(smult(b,smult(a_1,smult(c_2,R))))),EMC = enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(b,smult(a_1,smult(c_2,R))))),Z1 = smult(b,R),!2 = @sid_1,!1 = @sid]
+RESULT inj-event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) ==> inj-event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3)) is true.
+-- Query not (event(SecretKey(x_1)) && attacker(x_1)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 200 rules (40 with conclusion selected). Queue: 600 rules.
+400 rules inserted. Base: 400 rules (40 with conclusion selected). Queue: 600 rules.
+600 rules inserted. Base: 600 rules (45 with conclusion selected). Queue: 596 rules.
+800 rules inserted. Base: 799 rules (49 with conclusion selected). Queue: 586 rules.
+1000 rules inserted. Base: 999 rules (49 with conclusion selected). Queue: 586 rules.
+1200 rules inserted. Base: 1199 rules (50 with conclusion selected). Queue: 585 rules.
+1400 rules inserted. Base: 1396 rules (51 with conclusion selected). Queue: 581 rules.
+1600 rules inserted. Base: 1596 rules (51 with conclusion selected). Queue: 595 rules.
+1800 rules inserted. Base: 1792 rules (51 with conclusion selected). Queue: 621 rules.
+2000 rules inserted. Base: 1992 rules (51 with conclusion selected). Queue: 649 rules.
+2200 rules inserted. Base: 2186 rules (51 with conclusion selected). Queue: 992 rules.
+2400 rules inserted. Base: 2368 rules (51 with conclusion selected). Queue: 1156 rules.
+2600 rules inserted. Base: 2568 rules (51 with conclusion selected). Queue: 1268 rules.
+2800 rules inserted. Base: 2765 rules (51 with conclusion selected). Queue: 1375 rules.
+3000 rules inserted. Base: 2958 rules (51 with conclusion selected). Queue: 1436 rules.
+3200 rules inserted. Base: 3110 rules (51 with conclusion selected). Queue: 1520 rules.
+3400 rules inserted. Base: 3217 rules (51 with conclusion selected). Queue: 1591 rules.
+3600 rules inserted. Base: 3347 rules (51 with conclusion selected). Queue: 1716 rules.
+3800 rules inserted. Base: 3547 rules (51 with conclusion selected). Queue: 2163 rules.
+4000 rules inserted. Base: 3746 rules (51 with conclusion selected). Queue: 2616 rules.
+4200 rules inserted. Base: 3910 rules (51 with conclusion selected). Queue: 2583 rules.
+4400 rules inserted. Base: 4063 rules (51 with conclusion selected). Queue: 2514 rules.
+4600 rules inserted. Base: 4237 rules (51 with conclusion selected). Queue: 2388 rules.
+4800 rules inserted. Base: 4426 rules (51 with conclusion selected). Queue: 2364 rules.
+5000 rules inserted. Base: 4574 rules (54 with conclusion selected). Queue: 2526 rules.
+5200 rules inserted. Base: 4687 rules (55 with conclusion selected). Queue: 2549 rules.
+5400 rules inserted. Base: 4853 rules (55 with conclusion selected). Queue: 2453 rules.
+5600 rules inserted. Base: 5053 rules (55 with conclusion selected). Queue: 2253 rules.
+5800 rules inserted. Base: 5253 rules (55 with conclusion selected). Queue: 2053 rules.
+6000 rules inserted. Base: 5453 rules (55 with conclusion selected). Queue: 1853 rules.
+6200 rules inserted. Base: 5653 rules (55 with conclusion selected). Queue: 1653 rules.
+6400 rules inserted. Base: 5853 rules (55 with conclusion selected). Queue: 1453 rules.
+6600 rules inserted. Base: 6027 rules (56 with conclusion selected). Queue: 1289 rules.
+6800 rules inserted. Base: 6134 rules (58 with conclusion selected). Queue: 1241 rules.
+7000 rules inserted. Base: 6229 rules (59 with conclusion selected). Queue: 1272 rules.
+7200 rules inserted. Base: 6345 rules (60 with conclusion selected). Queue: 1177 rules.
+7400 rules inserted. Base: 6502 rules (80 with conclusion selected). Queue: 1079 rules.
+7600 rules inserted. Base: 6636 rules (91 with conclusion selected). Queue: 1186 rules.
+7800 rules inserted. Base: 6809 rules (99 with conclusion selected). Queue: 1167 rules.
+8000 rules inserted. Base: 6972 rules (117 with conclusion selected). Queue: 1088 rules.
+8200 rules inserted. Base: 7080 rules (136 with conclusion selected). Queue: 1009 rules.
+8400 rules inserted. Base: 7169 rules (157 with conclusion selected). Queue: 950 rules.
+8600 rules inserted. Base: 7339 rules (163 with conclusion selected). Queue: 834 rules.
+8800 rules inserted. Base: 7523 rules (178 with conclusion selected). Queue: 677 rules.
+9000 rules inserted. Base: 7696 rules (187 with conclusion selected). Queue: 597 rules.
+9200 rules inserted. Base: 7852 rules (217 with conclusion selected). Queue: 502 rules.
+9400 rules inserted. Base: 7965 rules (242 with conclusion selected). Queue: 390 rules.
+9600 rules inserted. Base: 8062 rules (248 with conclusion selected). Queue: 320 rules.
+9800 rules inserted. Base: 8220 rules (278 with conclusion selected). Queue: 310 rules.
+10000 rules inserted. Base: 8126 rules (288 with conclusion selected). Queue: 157 rules.
+10200 rules inserted. Base: 8211 rules (309 with conclusion selected). Queue: 195 rules.
+10400 rules inserted. Base: 8324 rules (309 with conclusion selected). Queue: 159 rules.
+Starting query not (event(SecretKey(x_1)) && attacker(x_1))
+RESULT not (event(SecretKey(x_1)) && attacker(x_1)) is true.
+-- Query not (event(SecretAC(x_1)) && attacker(x_1)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 200 rules (39 with conclusion selected). Queue: 611 rules.
+400 rules inserted. Base: 400 rules (39 with conclusion selected). Queue: 611 rules.
+600 rules inserted. Base: 600 rules (44 with conclusion selected). Queue: 607 rules.
+800 rules inserted. Base: 799 rules (48 with conclusion selected). Queue: 597 rules.
+1000 rules inserted. Base: 999 rules (48 with conclusion selected). Queue: 597 rules.
+1200 rules inserted. Base: 1199 rules (49 with conclusion selected). Queue: 596 rules.
+1400 rules inserted. Base: 1396 rules (50 with conclusion selected). Queue: 592 rules.
+1600 rules inserted. Base: 1596 rules (50 with conclusion selected). Queue: 604 rules.
+1800 rules inserted. Base: 1792 rules (50 with conclusion selected). Queue: 632 rules.
+2000 rules inserted. Base: 1992 rules (50 with conclusion selected). Queue: 652 rules.
+2200 rules inserted. Base: 2190 rules (50 with conclusion selected). Queue: 937 rules.
+2400 rules inserted. Base: 2366 rules (50 with conclusion selected). Queue: 1104 rules.
+2600 rules inserted. Base: 2566 rules (50 with conclusion selected). Queue: 1272 rules.
+2800 rules inserted. Base: 2763 rules (50 with conclusion selected). Queue: 1359 rules.
+3000 rules inserted. Base: 2956 rules (50 with conclusion selected). Queue: 1458 rules.
+3200 rules inserted. Base: 3125 rules (50 with conclusion selected). Queue: 1505 rules.
+3400 rules inserted. Base: 3253 rules (50 with conclusion selected). Queue: 1594 rules.
+3600 rules inserted. Base: 3368 rules (50 with conclusion selected). Queue: 1732 rules.
+3800 rules inserted. Base: 3545 rules (50 with conclusion selected). Queue: 2050 rules.
+4000 rules inserted. Base: 3745 rules (50 with conclusion selected). Queue: 2610 rules.
+4200 rules inserted. Base: 3922 rules (50 with conclusion selected). Queue: 2592 rules.
+4400 rules inserted. Base: 4087 rules (50 with conclusion selected). Queue: 2561 rules.
+4600 rules inserted. Base: 4253 rules (50 with conclusion selected). Queue: 2450 rules.
+4800 rules inserted. Base: 4433 rules (50 with conclusion selected). Queue: 2326 rules.
+5000 rules inserted. Base: 4579 rules (51 with conclusion selected). Queue: 2447 rules.
+5200 rules inserted. Base: 4705 rules (53 with conclusion selected). Queue: 2543 rules.
+5400 rules inserted. Base: 4846 rules (54 with conclusion selected). Queue: 2540 rules.
+5600 rules inserted. Base: 5046 rules (54 with conclusion selected). Queue: 2340 rules.
+5800 rules inserted. Base: 5246 rules (54 with conclusion selected). Queue: 2140 rules.
+6000 rules inserted. Base: 5446 rules (54 with conclusion selected). Queue: 1940 rules.
+6200 rules inserted. Base: 5646 rules (54 with conclusion selected). Queue: 1740 rules.
+6400 rules inserted. Base: 5846 rules (54 with conclusion selected). Queue: 1540 rules.
+6600 rules inserted. Base: 6046 rules (54 with conclusion selected). Queue: 1340 rules.
+6800 rules inserted. Base: 6169 rules (55 with conclusion selected). Queue: 1227 rules.
+7000 rules inserted. Base: 6259 rules (58 with conclusion selected). Queue: 1244 rules.
+7200 rules inserted. Base: 6362 rules (59 with conclusion selected). Queue: 1237 rules.
+7400 rules inserted. Base: 6510 rules (61 with conclusion selected). Queue: 1099 rules.
+7600 rules inserted. Base: 6651 rules (80 with conclusion selected). Queue: 1123 rules.
+7800 rules inserted. Base: 6790 rules (99 with conclusion selected). Queue: 1193 rules.
+8000 rules inserted. Base: 6970 rules (108 with conclusion selected). Queue: 1148 rules.
+8200 rules inserted. Base: 7129 rules (137 with conclusion selected). Queue: 1026 rules.
+8400 rules inserted. Base: 7178 rules (140 with conclusion selected). Queue: 996 rules.
+8600 rules inserted. Base: 7334 rules (164 with conclusion selected). Queue: 894 rules.
+8800 rules inserted. Base: 7512 rules (171 with conclusion selected). Queue: 745 rules.
+9000 rules inserted. Base: 7694 rules (188 with conclusion selected). Queue: 615 rules.
+9200 rules inserted. Base: 7860 rules (199 with conclusion selected). Queue: 542 rules.
+9400 rules inserted. Base: 8004 rules (236 with conclusion selected). Queue: 446 rules.
+9600 rules inserted. Base: 8094 rules (249 with conclusion selected). Queue: 328 rules.
+9800 rules inserted. Base: 8239 rules (261 with conclusion selected). Queue: 276 rules.
+10000 rules inserted. Base: 8172 rules (281 with conclusion selected). Queue: 166 rules.
+10200 rules inserted. Base: 8200 rules (304 with conclusion selected). Queue: 161 rules.
+10400 rules inserted. Base: 8334 rules (310 with conclusion selected). Queue: 158 rules.
+10600 rules inserted. Base: 8406 rules (310 with conclusion selected). Queue: 76 rules.
+Starting query not (event(SecretAC(x_1)) && attacker(x_1))
+RESULT not (event(SecretAC(x_1)) && attacker(x_1)) is true.
+-- Query not (event(SecretPin(x_1)) && attacker(x_1)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 200 rules (40 with conclusion selected). Queue: 600 rules.
+400 rules inserted. Base: 400 rules (40 with conclusion selected). Queue: 600 rules.
+600 rules inserted. Base: 600 rules (45 with conclusion selected). Queue: 596 rules.
+800 rules inserted. Base: 799 rules (49 with conclusion selected). Queue: 586 rules.
+1000 rules inserted. Base: 999 rules (49 with conclusion selected). Queue: 586 rules.
+1200 rules inserted. Base: 1199 rules (50 with conclusion selected). Queue: 585 rules.
+1400 rules inserted. Base: 1396 rules (51 with conclusion selected). Queue: 581 rules.
+1600 rules inserted. Base: 1596 rules (51 with conclusion selected). Queue: 595 rules.
+1800 rules inserted. Base: 1792 rules (51 with conclusion selected). Queue: 621 rules.
+2000 rules inserted. Base: 1992 rules (51 with conclusion selected). Queue: 649 rules.
+2200 rules inserted. Base: 2186 rules (51 with conclusion selected). Queue: 992 rules.
+2400 rules inserted. Base: 2368 rules (51 with conclusion selected). Queue: 1156 rules.
+2600 rules inserted. Base: 2568 rules (51 with conclusion selected). Queue: 1268 rules.
+2800 rules inserted. Base: 2765 rules (51 with conclusion selected). Queue: 1375 rules.
+3000 rules inserted. Base: 2958 rules (51 with conclusion selected). Queue: 1436 rules.
+3200 rules inserted. Base: 3110 rules (51 with conclusion selected). Queue: 1520 rules.
+3400 rules inserted. Base: 3217 rules (51 with conclusion selected). Queue: 1591 rules.
+3600 rules inserted. Base: 3347 rules (51 with conclusion selected). Queue: 1716 rules.
+3800 rules inserted. Base: 3547 rules (51 with conclusion selected). Queue: 2163 rules.
+4000 rules inserted. Base: 3746 rules (51 with conclusion selected). Queue: 2616 rules.
+4200 rules inserted. Base: 3910 rules (51 with conclusion selected). Queue: 2583 rules.
+4400 rules inserted. Base: 4063 rules (51 with conclusion selected). Queue: 2514 rules.
+4600 rules inserted. Base: 4237 rules (51 with conclusion selected). Queue: 2388 rules.
+4800 rules inserted. Base: 4426 rules (51 with conclusion selected). Queue: 2364 rules.
+5000 rules inserted. Base: 4574 rules (54 with conclusion selected). Queue: 2526 rules.
+5200 rules inserted. Base: 4687 rules (55 with conclusion selected). Queue: 2549 rules.
+5400 rules inserted. Base: 4853 rules (55 with conclusion selected). Queue: 2453 rules.
+5600 rules inserted. Base: 5053 rules (55 with conclusion selected). Queue: 2253 rules.
+5800 rules inserted. Base: 5253 rules (55 with conclusion selected). Queue: 2053 rules.
+6000 rules inserted. Base: 5453 rules (55 with conclusion selected). Queue: 1853 rules.
+6200 rules inserted. Base: 5653 rules (55 with conclusion selected). Queue: 1653 rules.
+6400 rules inserted. Base: 5853 rules (55 with conclusion selected). Queue: 1453 rules.
+6600 rules inserted. Base: 6027 rules (56 with conclusion selected). Queue: 1289 rules.
+6800 rules inserted. Base: 6134 rules (58 with conclusion selected). Queue: 1241 rules.
+7000 rules inserted. Base: 6229 rules (59 with conclusion selected). Queue: 1272 rules.
+7200 rules inserted. Base: 6345 rules (60 with conclusion selected). Queue: 1177 rules.
+7400 rules inserted. Base: 6502 rules (80 with conclusion selected). Queue: 1079 rules.
+7600 rules inserted. Base: 6636 rules (91 with conclusion selected). Queue: 1186 rules.
+7800 rules inserted. Base: 6809 rules (99 with conclusion selected). Queue: 1167 rules.
+8000 rules inserted. Base: 6972 rules (117 with conclusion selected). Queue: 1088 rules.
+8200 rules inserted. Base: 7080 rules (136 with conclusion selected). Queue: 1009 rules.
+8400 rules inserted. Base: 7169 rules (157 with conclusion selected). Queue: 950 rules.
+8600 rules inserted. Base: 7339 rules (163 with conclusion selected). Queue: 834 rules.
+8800 rules inserted. Base: 7523 rules (178 with conclusion selected). Queue: 677 rules.
+9000 rules inserted. Base: 7696 rules (187 with conclusion selected). Queue: 597 rules.
+9200 rules inserted. Base: 7852 rules (217 with conclusion selected). Queue: 502 rules.
+9400 rules inserted. Base: 7965 rules (242 with conclusion selected). Queue: 390 rules.
+9600 rules inserted. Base: 8062 rules (248 with conclusion selected). Queue: 320 rules.
+9800 rules inserted. Base: 8220 rules (278 with conclusion selected). Queue: 310 rules.
+10000 rules inserted. Base: 8126 rules (288 with conclusion selected). Queue: 157 rules.
+10200 rules inserted. Base: 8211 rules (309 with conclusion selected). Queue: 195 rules.
+10400 rules inserted. Base: 8324 rules (309 with conclusion selected). Queue: 159 rules.
+Starting query not (event(SecretPin(x_1)) && attacker(x_1))
+goal reachable: end(SecretPin(PIN_3)) && attacker(PIN_3)
+Abbreviations:
+PIN_3 = PIN[!1 = @sid]
+
+Derivation:
+Abbreviations:
+PIN_3 = PIN[!1 = @sid]
+
+1. The message PIN_3 may be sent to the attacker at output {10}.
+attacker(PIN_3).
+
+2. The attacker has some term Z1_1.
+attacker(Z1_1).
+
+3. The message Z1_1 that the attacker may have by 2 may be received at input {18}.
+So event SecretPin(PIN_3) may be executed at {24}.
+end(SecretPin(PIN_3)).
+
+4. By 3, end(SecretPin(PIN_3)).
+By 1, attacker(PIN_3).
+The goals are reached, combined in the following fact:
+end(SecretPin(PIN_3)) && attacker(PIN_3).
+
+
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+new s: sskey creating s_1 at {1}
+
+new chiMM: svkey creating chiMM_1 at {2}
+
+out(cout, ~M) with ~M = pks(s_1) at {3}
+
+out(cout, ~M_1) with ~M_1 = pkv(chiMM_1) at {4}
+
+new bt: scalar creating bt_2 at {54}
+
+out(cout, ((MM,~M_2),~M_3)) with ~M_2 = smult(bt_2,R), ~M_3 = sign((MM,smult(bt_2,R)),s_1) at {55}
+
+new PIN: text creating PIN_3 at {6} in copy a_1
+
+new mk: key creating mk_3 at {7} in copy a_1
+
+new c: scalar creating c_2 at {8} in copy a_1
+
+new PAN: text creating PAN_3 at {9} in copy a_1
+
+out(cout, ~M_4) with ~M_4 = PIN_3 at {10} in copy a_1
+
+insert si(PAN_3,PIN_3,mk_3,smult(c_2,R)) at {53} in copy a_1
+
+in(card, a_2) at {18} in copy a_1, a_3
+
+new a: scalar creating a_4 at {20} in copy a_1, a_3
+
+out(card, ~M_5) with ~M_5 = smult(a_4,smult(c_2,R)) at {22} in copy a_1, a_3
+
+event SecretPin(PIN_3) at {24} in copy a_1, a_3 (goal)
+
+The event SecretPin(PIN_3) is executed at {24} in copy a_1, a_3.
+The attacker has the message ~M_4 = PIN_3.
+A trace has been found.
+RESULT not (event(SecretPin(x_1)) && attacker(x_1)) is false.
+-- Query not (event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) && event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3))) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 200 rules (39 with conclusion selected). Queue: 1159 rules.
+400 rules inserted. Base: 400 rules (39 with conclusion selected). Queue: 1159 rules.
+600 rules inserted. Base: 600 rules (39 with conclusion selected). Queue: 1159 rules.
+800 rules inserted. Base: 800 rules (39 with conclusion selected). Queue: 1159 rules.
+1000 rules inserted. Base: 1000 rules (39 with conclusion selected). Queue: 1159 rules.
+1200 rules inserted. Base: 1200 rules (44 with conclusion selected). Queue: 1155 rules.
+1400 rules inserted. Base: 1399 rules (48 with conclusion selected). Queue: 1145 rules.
+1600 rules inserted. Base: 1599 rules (48 with conclusion selected). Queue: 1145 rules.
+1800 rules inserted. Base: 1799 rules (48 with conclusion selected). Queue: 1145 rules.
+2000 rules inserted. Base: 1999 rules (48 with conclusion selected). Queue: 1145 rules.
+2200 rules inserted. Base: 2199 rules (48 with conclusion selected). Queue: 1145 rules.
+2400 rules inserted. Base: 2396 rules (50 with conclusion selected). Queue: 1140 rules.
+2600 rules inserted. Base: 2596 rules (50 with conclusion selected). Queue: 1140 rules.
+2800 rules inserted. Base: 2796 rules (50 with conclusion selected). Queue: 1142 rules.
+3000 rules inserted. Base: 2996 rules (50 with conclusion selected). Queue: 1154 rules.
+3200 rules inserted. Base: 3194 rules (50 with conclusion selected). Queue: 1158 rules.
+3400 rules inserted. Base: 3392 rules (50 with conclusion selected). Queue: 1200 rules.
+3600 rules inserted. Base: 3592 rules (50 with conclusion selected). Queue: 1212 rules.
+3800 rules inserted. Base: 3792 rules (50 with conclusion selected). Queue: 1228 rules.
+4000 rules inserted. Base: 3992 rules (50 with conclusion selected). Queue: 1450 rules.
+4200 rules inserted. Base: 4186 rules (50 with conclusion selected). Queue: 1619 rules.
+4400 rules inserted. Base: 4384 rules (50 with conclusion selected). Queue: 1721 rules.
+4600 rules inserted. Base: 4552 rules (50 with conclusion selected). Queue: 1851 rules.
+4800 rules inserted. Base: 4752 rules (50 with conclusion selected). Queue: 2001 rules.
+5000 rules inserted. Base: 4952 rules (50 with conclusion selected). Queue: 2107 rules.
+5200 rules inserted. Base: 5149 rules (50 with conclusion selected). Queue: 2154 rules.
+5400 rules inserted. Base: 5344 rules (50 with conclusion selected). Queue: 2276 rules.
+5600 rules inserted. Base: 5542 rules (50 with conclusion selected). Queue: 2352 rules.
+5800 rules inserted. Base: 5708 rules (50 with conclusion selected). Queue: 2427 rules.
+6000 rules inserted. Base: 5884 rules (50 with conclusion selected). Queue: 2528 rules.
+6200 rules inserted. Base: 5929 rules (50 with conclusion selected). Queue: 2593 rules.
+6400 rules inserted. Base: 6063 rules (50 with conclusion selected). Queue: 2679 rules.
+6600 rules inserted. Base: 6192 rules (50 with conclusion selected). Queue: 2668 rules.
+6800 rules inserted. Base: 6392 rules (50 with conclusion selected). Queue: 3162 rules.
+7000 rules inserted. Base: 6592 rules (50 with conclusion selected). Queue: 3570 rules.
+7200 rules inserted. Base: 6792 rules (50 with conclusion selected). Queue: 3922 rules.
+7400 rules inserted. Base: 6978 rules (50 with conclusion selected). Queue: 3894 rules.
+7600 rules inserted. Base: 7135 rules (50 with conclusion selected). Queue: 3798 rules.
+7800 rules inserted. Base: 7309 rules (50 with conclusion selected). Queue: 3747 rules.
+8000 rules inserted. Base: 7470 rules (50 with conclusion selected). Queue: 3651 rules.
+8200 rules inserted. Base: 7650 rules (50 with conclusion selected). Queue: 3523 rules.
+8400 rules inserted. Base: 7835 rules (50 with conclusion selected). Queue: 3504 rules.
+8600 rules inserted. Base: 7974 rules (51 with conclusion selected). Queue: 3571 rules.
+8800 rules inserted. Base: 8106 rules (53 with conclusion selected). Queue: 3691 rules.
+9000 rules inserted. Base: 8242 rules (54 with conclusion selected). Queue: 3696 rules.
+9200 rules inserted. Base: 8378 rules (54 with conclusion selected). Queue: 3675 rules.
+9400 rules inserted. Base: 8578 rules (54 with conclusion selected). Queue: 3493 rules.
+9600 rules inserted. Base: 8778 rules (54 with conclusion selected). Queue: 3293 rules.
+9800 rules inserted. Base: 8978 rules (54 with conclusion selected). Queue: 3093 rules.
+10000 rules inserted. Base: 9178 rules (54 with conclusion selected). Queue: 2893 rules.
+10200 rules inserted. Base: 9378 rules (54 with conclusion selected). Queue: 2693 rules.
+10400 rules inserted. Base: 9578 rules (54 with conclusion selected). Queue: 2493 rules.
+10600 rules inserted. Base: 9778 rules (54 with conclusion selected). Queue: 2293 rules.
+10800 rules inserted. Base: 9978 rules (54 with conclusion selected). Queue: 2093 rules.
+11000 rules inserted. Base: 10178 rules (54 with conclusion selected). Queue: 1893 rules.
+11200 rules inserted. Base: 10306 rules (55 with conclusion selected). Queue: 1783 rules.
+11400 rules inserted. Base: 10397 rules (57 with conclusion selected). Queue: 1773 rules.
+11600 rules inserted. Base: 10472 rules (58 with conclusion selected). Queue: 1752 rules.
+11800 rules inserted. Base: 10574 rules (59 with conclusion selected). Queue: 1745 rules.
+12000 rules inserted. Base: 10724 rules (60 with conclusion selected). Queue: 1608 rules.
+12200 rules inserted. Base: 10883 rules (97 with conclusion selected). Queue: 1548 rules.
+12400 rules inserted. Base: 10987 rules (103 with conclusion selected). Queue: 1687 rules.
+12600 rules inserted. Base: 11047 rules (116 with conclusion selected). Queue: 1784 rules.
+12800 rules inserted. Base: 11247 rules (116 with conclusion selected). Queue: 1731 rules.
+13000 rules inserted. Base: 11410 rules (128 with conclusion selected). Queue: 1687 rules.
+13200 rules inserted. Base: 11573 rules (160 with conclusion selected). Queue: 1547 rules.
+13400 rules inserted. Base: 11648 rules (173 with conclusion selected). Queue: 1504 rules.
+13600 rules inserted. Base: 11776 rules (201 with conclusion selected). Queue: 1414 rules.
+13800 rules inserted. Base: 11954 rules (204 with conclusion selected). Queue: 1287 rules.
+14000 rules inserted. Base: 12135 rules (207 with conclusion selected). Queue: 1128 rules.
+14200 rules inserted. Base: 12318 rules (218 with conclusion selected). Queue: 964 rules.
+14400 rules inserted. Base: 12503 rules (228 with conclusion selected). Queue: 832 rules.
+14600 rules inserted. Base: 12657 rules (228 with conclusion selected). Queue: 784 rules.
+14800 rules inserted. Base: 12819 rules (252 with conclusion selected). Queue: 667 rules.
+15000 rules inserted. Base: 12926 rules (289 with conclusion selected). Queue: 572 rules.
+15200 rules inserted. Base: 13064 rules (295 with conclusion selected). Queue: 436 rules.
+15400 rules inserted. Base: 13126 rules (297 with conclusion selected). Queue: 354 rules.
+15600 rules inserted. Base: 13263 rules (325 with conclusion selected). Queue: 374 rules.
+15800 rules inserted. Base: 13185 rules (331 with conclusion selected). Queue: 240 rules.
+16000 rules inserted. Base: 13194 rules (350 with conclusion selected). Queue: 252 rules.
+16200 rules inserted. Base: 13345 rules (368 with conclusion selected). Queue: 311 rules.
+16400 rules inserted. Base: 13452 rules (386 with conclusion selected). Queue: 278 rules.
+16600 rules inserted. Base: 13537 rules (406 with conclusion selected). Queue: 195 rules.
+16800 rules inserted. Base: 13555 rules (435 with conclusion selected). Queue: 49 rules.
+Starting query not (event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) && event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3)))
+200 rules inserted. Base: 100 rules (99 with conclusion selected). Queue: 1 rules.
+goal reachable: TXtype_2 ≠ HI && TXtype_2 ≠ LO && begin(ProcessingTransation(sessNonce_1,(TXdata_2,TXtype_2))) && attacker(uPIN_1) && attacker(TXdata_2) && attacker(TXtype_2) -> end(BCommitWithC(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))))) && end(CRunningWithBank(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))))
+Abbreviations:
+a_1 = a[Z1 = R,!2 = @sid,!1 = @sid_1]
+PAN_3 = PAN[!1 = @sid_1]
+mk_3 = mk[!1 = @sid_1]
+c_2 = c[!1 = @sid_1]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+
+Derivation:
+Abbreviations:
+a_1 = a[Z1 = R,!2 = @sid,!1 = @sid_1]
+PAN_3 = PAN[!1 = @sid_1]
+mk_3 = mk[!1 = @sid_1]
+c_2 = c[!1 = @sid_1]
+PIN_3 = PIN[!1 = @sid_1]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2]
+
+1. Using the function R the attacker may obtain R.
+attacker(R).
+
+2. The message R that the attacker may have by 1 may be received at input {18}.
+So the message smult(c_2,smult(a_1,R)) may be sent to the attacker at output {22}.
+attacker(smult(c_2,smult(a_1,R))).
+
+3. By 2, the attacker may know smult(c_2,smult(a_1,R)).
+Using the function h the attacker may obtain h(smult(c_2,smult(a_1,R))).
+attacker(h(smult(c_2,smult(a_1,R)))).
+
+4. The message ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])) may be sent to the attacker at output {55}.
+attacker(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[]))).
+
+5. By 4, the attacker may know ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+Using the function 2-proj-2-tuple the attacker may obtain sign((MM,smult(bt[],R)),s[]).
+attacker(sign((MM,smult(bt[],R)),s[])).
+
+6. By 4, the attacker may know ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+Using the function 1-proj-2-tuple the attacker may obtain (MM,smult(bt[],R)).
+attacker((MM,smult(bt[],R))).
+
+7. By 6, the attacker may know (MM,smult(bt[],R)).
+Using the function 2-proj-2-tuple the attacker may obtain smult(bt[],R).
+attacker(smult(bt[],R)).
+
+8. Using the function MM the attacker may obtain MM.
+attacker(MM).
+
+9. By 8, the attacker may know MM.
+By 7, the attacker may know smult(bt[],R).
+Using the function 2-tuple the attacker may obtain (MM,smult(bt[],R)).
+attacker((MM,smult(bt[],R))).
+
+10. By 9, the attacker may know (MM,smult(bt[],R)).
+By 5, the attacker may know sign((MM,smult(bt[],R)),s[]).
+Using the function 2-tuple the attacker may obtain ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+attacker(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[]))).
+
+11. By 10, the attacker may know ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+By 3, the attacker may know h(smult(c_2,smult(a_1,R))).
+Using the function enc the attacker may obtain enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_1,R)))).
+attacker(enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_1,R))))).
+
+12. The attacker has some term uPin_1.
+attacker(uPin_1).
+
+13. We assume as hypothesis that
+attacker(TXtype_2).
+
+14. We assume as hypothesis that
+attacker(TXdata_2).
+
+15. By 14, the attacker may know TXdata_2.
+By 13, the attacker may know TXtype_2.
+Using the function 2-tuple the attacker may obtain (TXdata_2,TXtype_2).
+attacker((TXdata_2,TXtype_2)).
+
+16. By 15, the attacker may know (TXdata_2,TXtype_2).
+By 12, the attacker may know uPin_1.
+Using the function 2-tuple the attacker may obtain ((TXdata_2,TXtype_2),uPin_1).
+attacker(((TXdata_2,TXtype_2),uPin_1)).
+
+17. By 16, the attacker may know ((TXdata_2,TXtype_2),uPin_1).
+By 3, the attacker may know h(smult(c_2,smult(a_1,R))).
+Using the function enc the attacker may obtain enc(((TXdata_2,TXtype_2),uPin_1),h(smult(c_2,smult(a_1,R)))).
+attacker(enc(((TXdata_2,TXtype_2),uPin_1),h(smult(c_2,smult(a_1,R))))).
+
+18. The message R that the attacker may have by 1 may be received at input {18}.
+The message enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_1,R)))) that the attacker may have by 11 may be received at input {26}.
+The message enc(((TXdata_2,TXtype_2),uPin_1),h(smult(c_2,smult(a_1,R)))) that the attacker may have by 17 may be received at input {32}.
+We have TXtype_2 ≠ LO && TXtype_2 ≠ HI.
+So event CRunningWithBank(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))) may be executed at {49}.
+end(CRunningWithBank(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))))).
+
+19. The attacker initially knows kbt[].
+attacker(kbt[]).
+
+20. We assume as hypothesis that
+attacker(uPIN_1).
+
+21. The attacker has some term uPin_2.
+attacker(uPin_2).
+
+22. By 15, the attacker may know (TXdata_2,TXtype_2).
+By 21, the attacker may know uPin_2.
+Using the function 2-tuple the attacker may obtain ((TXdata_2,TXtype_2),uPin_2).
+attacker(((TXdata_2,TXtype_2),uPin_2)).
+
+23. By 22, the attacker may know ((TXdata_2,TXtype_2),uPin_2).
+By 3, the attacker may know h(smult(c_2,smult(a_1,R))).
+Using the function enc the attacker may obtain enc(((TXdata_2,TXtype_2),uPin_2),h(smult(c_2,smult(a_1,R)))).
+attacker(enc(((TXdata_2,TXtype_2),uPin_2),h(smult(c_2,smult(a_1,R))))).
+
+24. The message R that the attacker may have by 1 may be received at input {18}.
+The message enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_1,R)))) that the attacker may have by 11 may be received at input {26}.
+The message enc(((TXdata_2,TXtype_2),uPin_2),h(smult(c_2,smult(a_1,R)))) that the attacker may have by 23 may be received at input {32}.
+We have TXtype_2 ≠ LO && TXtype_2 ≠ HI.
+So the message enc(((TXdata_2,TXtype_2),NO,enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),h(smult(c_2,smult(a_1,R)))) may be sent to the attacker at output {50}.
+attacker(enc(((TXdata_2,TXtype_2),NO,enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),h(smult(c_2,smult(a_1,R))))).
+
+25. By 24, the attacker may know enc(((TXdata_2,TXtype_2),NO,enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))),h(smult(c_2,smult(a_1,R)))).
+By 3, the attacker may know h(smult(c_2,smult(a_1,R))).
+Using the function dec the attacker may obtain ((TXdata_2,TXtype_2),NO,enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))).
+attacker(((TXdata_2,TXtype_2),NO,enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))))).
+
+26. By 25, the attacker may know ((TXdata_2,TXtype_2),NO,enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))).
+Using the function 3-proj-3-tuple the attacker may obtain enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))).
+attacker(enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))).
+
+27. By 15, the attacker may know (TXdata_2,TXtype_2).
+By 2, the attacker may know smult(c_2,smult(a_1,R)).
+By 26, the attacker may know enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))).
+By 20, the attacker may know uPIN_1.
+Using the function 4-tuple the attacker may obtain ((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1).
+attacker(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1)).
+
+28. By 27, the attacker may know ((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1).
+By 19, the attacker may know kbt[].
+Using the function enc the attacker may obtain enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]).
+attacker(enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[])).
+
+29. The entry si(PAN_3,PIN_3,mk_3,smult(c_2,R)) may be inserted in a table at insert {53}.
+table(si(PAN_3,PIN_3,mk_3,smult(c_2,R))).
+
+30. The message enc(((TXdata_2,TXtype_2),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),uPIN_1),kbt[]) that the attacker may have by 28 may be received at input {59}.
+The event ProcessingTransation(sessNonce_1,(TXdata_2,TXtype_2)) may be executed at {62}.
+The entry si(PAN_3,PIN_3,mk_3,smult(c_2,R)) that may be in a table by 29 may be read at get {93}.
+We have TXtype_2 ≠ HI && TXtype_2 ≠ LO.
+So event BCommitWithC(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R)))))) may be executed at {91}.
+end(BCommitWithC(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))))).
+
+31. By 30, end(BCommitWithC(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))))).
+By 18, end(CRunningWithBank(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))))).
+The goals are reached, combined in the following fact:
+end(BCommitWithC(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))))) && end(CRunningWithBank(a_1,PAN_3,(TXdata_2,TXtype_2),enc(((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mac((a_1,PAN_3,(TXdata_2,TXtype_2),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))))).
+
+
+Unified uPin_1 with uPin_2
+Iterating unifyDerivation.
+Fixpoint reached: nothing more to unify.
+The clause after unifyDerivation is
+TXtype_2 ≠ LO && TXtype_2 ≠ HI && attacker(TXtype_2) && attacker(TXdata_2) && attacker(uPIN_1) && begin(ProcessingTransation(sessNonce[x = enc(((TXdata_2,TXtype_2),smult(c[!1 = @sid_1],smult(a[Z1 = R,!2 = @sid,!1 = @sid_1],R)),enc(((a[Z1 = R,!2 = @sid,!1 = @sid_1],PAN[!1 = @sid_1],(TXdata_2,TXtype_2),NO),mac((a[Z1 = R,!2 = @sid,!1 = @sid_1],PAN[!1 = @sid_1],(TXdata_2,TXtype_2),NO),mk[!1 = @sid_1])),h(smult(a[Z1 = R,!2 = @sid,!1 = @sid_1],smult(c[!1 = @sid_1],smult(bt[],R))))),uPIN_1),kbt[]),!1 = @sid_2],(TXdata_2,TXtype_2))) -> end(BCommitWithC(a[Z1 = R,!2 = @sid,!1 = @sid_1],PAN[!1 = @sid_1],(TXdata_2,TXtype_2),enc(((a[Z1 = R,!2 = @sid,!1 = @sid_1],PAN[!1 = @sid_1],(TXdata_2,TXtype_2),NO),mac((a[Z1 = R,!2 = @sid,!1 = @sid_1],PAN[!1 = @sid_1],(TXdata_2,TXtype_2),NO),mk[!1 = @sid_1])),h(smult(a[Z1 = R,!2 = @sid,!1 = @sid_1],smult(c[!1 = @sid_1],smult(bt[],R))))))) && end(CRunningWithBank(a[Z1 = R,!2 = @sid,!1 = @sid_1],PAN[!1 = @sid_1],(TXdata_2,TXtype_2),enc(((a[Z1 = R,!2 = @sid,!1 = @sid_1],PAN[!1 = @sid_1],(TXdata_2,TXtype_2),NO),mac((a[Z1 = R,!2 = @sid,!1 = @sid_1],PAN[!1 = @sid_1],(TXdata_2,TXtype_2),NO),mk[!1 = @sid_1])),h(smult(a[Z1 = R,!2 = @sid,!1 = @sid_1],smult(c[!1 = @sid_1],smult(bt[],R)))))))
+This clause still contradicts the query.
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+new s: sskey creating s_1 at {1}
+
+new chiMM: svkey creating chiMM_1 at {2}
+
+out(cout, ~M) with ~M = pks(s_1) at {3}
+
+out(cout, ~M_1) with ~M_1 = pkv(chiMM_1) at {4}
+
+new bt: scalar creating bt_2 at {54}
+
+out(cout, ((MM,~M_2),~M_3)) with ~M_2 = smult(bt_2,R), ~M_3 = sign((MM,smult(bt_2,R)),s_1) at {55}
+
+new PIN: text creating PIN_3 at {6} in copy a_1
+
+new mk: key creating mk_3 at {7} in copy a_1
+
+new c: scalar creating c_2 at {8} in copy a_1
+
+new PAN: text creating PAN_3 at {9} in copy a_1
+
+out(cout, ~M_4) with ~M_4 = PIN_3 at {10} in copy a_1
+
+insert si(PAN_3,PIN_3,mk_3,smult(c_2,R)) at {53} in copy a_1
+
+in(card, R) at {18} in copy a_1, a_2
+
+new a: scalar creating a_3 at {20} in copy a_1, a_2
+
+out(card, ~M_5) with ~M_5 = smult(a_3,smult(c_2,R)) at {22} in copy a_1, a_2
+
+event SecretPin(PIN_3) at {24} in copy a_1, a_2
+
+event SecretKey(mk_3) at {25} in copy a_1, a_2
+
+in(card, enc(((MM,~M_2),~M_3),h(~M_5))) with enc(((MM,~M_2),~M_3),h(~M_5)) = enc(((MM,smult(bt_2,R)),sign((MM,smult(bt_2,R)),s_1)),h(smult(c_2,smult(a_3,R)))) at {26} in copy a_1, a_2
+
+out(card, ~M_6) with ~M_6 = enc((smult(a_3,smult(c_2,R)),smult(a_3,vsign(smult(c_2,R),chiMM_1))),h(smult(a_3,smult(c_2,R)))) at {31} in copy a_1, a_2
+
+in(card, enc(((a_4,a_5),a_6),h(~M_5))) with enc(((a_4,a_5),a_6),h(~M_5)) = enc(((a_4,a_5),a_6),h(smult(c_2,smult(a_3,R)))) at {32} in copy a_1, a_2
+
+event SecretAC((a_3,PAN_3,(a_4,a_5),OK)) at {37} in copy a_1, a_2
+
+event CRunning(R,smult(a_3,smult(c_2,R)),enc(((MM,smult(bt_2,R)),sign((MM,smult(bt_2,R)),s_1)),h(smult(c_2,smult(a_3,R)))),enc((smult(a_3,smult(c_2,R)),smult(a_3,vsign(smult(c_2,R),chiMM_1))),h(smult(a_3,smult(c_2,R)))),enc(((a_4,a_5),a_6),h(smult(c_2,smult(a_3,R)))),enc(((a_4,a_5),NO,enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))),h(smult(a_3,smult(c_2,R))))) at {48} in copy a_1, a_2
+
+event CRunningWithBank(a_3,PAN_3,(a_4,a_5),enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))) at {49} in copy a_1, a_2 (goal)
+
+out(card, ~M_7) with ~M_7 = enc(((a_4,a_5),NO,enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))),h(smult(a_3,smult(c_2,R)))) at {50} in copy a_1, a_2
+
+in(bank, enc(((a_4,a_5),~M_5,3-proj-3-tuple(dec(~M_7,h(~M_5))),a_7),kbt)) with enc(((a_4,a_5),~M_5,3-proj-3-tuple(dec(~M_7,h(~M_5))),a_7),kbt) = enc(((a_4,a_5),smult(c_2,smult(a_3,R)),enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R))))),a_7),kbt) at {59} in copy a_8
+
+new sessNonce: bitstring creating sessNonce_1 at {61} in copy a_8
+
+event ProcessingTransation(sessNonce_1,(a_4,a_5)) at {62} in copy a_8
+
+get si(PAN_3,PIN_3,mk_3,smult(c_2,R)) at {93} in copy a_8
+
+event BReject(kbt,(a_4,a_5)) at {88} in copy a_8
+
+event BRunningWithT(enc(((a_4,a_5),smult(c_2,smult(a_3,R)),enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R))))),a_7),kbt),enc(((a_4,a_5),NO),kbt)) at {89} in copy a_8
+
+event BCommitWithTC(enc(((a_4,a_5),smult(c_2,smult(a_3,R)),enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R))))),a_7),kbt)) at {90} in copy a_8
+
+event BCommitWithC(a_3,PAN_3,(a_4,a_5),enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))) at {91} in copy a_8 (goal)
+
+The event BCommitWithC(a_3,PAN_3,(a_4,a_5),enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))) is executed at {91} in copy a_8.
+The event CRunningWithBank(a_3,PAN_3,(a_4,a_5),enc(((a_3,PAN_3,(a_4,a_5),NO),mac((a_3,PAN_3,(a_4,a_5),NO),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))) is executed at {49} in copy a_1, a_2.
+A trace has been found.
+RESULT not (event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) && event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3))) is false.
+-- Query not (event(CAccept(PAN_3,TX_2)) && event(BAccept(kbt_2,PAN_3,TX_2))) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 200 rules (39 with conclusion selected). Queue: 667 rules.
+400 rules inserted. Base: 400 rules (39 with conclusion selected). Queue: 667 rules.
+600 rules inserted. Base: 600 rules (44 with conclusion selected). Queue: 663 rules.
+800 rules inserted. Base: 799 rules (48 with conclusion selected). Queue: 653 rules.
+1000 rules inserted. Base: 999 rules (48 with conclusion selected). Queue: 653 rules.
+1200 rules inserted. Base: 1199 rules (48 with conclusion selected). Queue: 653 rules.
+1400 rules inserted. Base: 1396 rules (50 with conclusion selected). Queue: 648 rules.
+1600 rules inserted. Base: 1596 rules (50 with conclusion selected). Queue: 650 rules.
+1800 rules inserted. Base: 1796 rules (50 with conclusion selected). Queue: 665 rules.
+2000 rules inserted. Base: 1992 rules (50 with conclusion selected). Queue: 688 rules.
+2200 rules inserted. Base: 2192 rules (50 with conclusion selected). Queue: 716 rules.
+2400 rules inserted. Base: 2386 rules (50 with conclusion selected). Queue: 1035 rules.
+2600 rules inserted. Base: 2526 rules (50 with conclusion selected). Queue: 1155 rules.
+2800 rules inserted. Base: 2726 rules (50 with conclusion selected). Queue: 1320 rules.
+3000 rules inserted. Base: 2923 rules (50 with conclusion selected). Queue: 1417 rules.
+3200 rules inserted. Base: 3118 rules (50 with conclusion selected). Queue: 1527 rules.
+3400 rules inserted. Base: 3288 rules (50 with conclusion selected). Queue: 1573 rules.
+3600 rules inserted. Base: 3429 rules (50 with conclusion selected). Queue: 1666 rules.
+3800 rules inserted. Base: 3536 rules (50 with conclusion selected). Queue: 1814 rules.
+4000 rules inserted. Base: 3673 rules (50 with conclusion selected). Queue: 1861 rules.
+4200 rules inserted. Base: 3873 rules (50 with conclusion selected). Queue: 2437 rules.
+4400 rules inserted. Base: 4067 rules (50 with conclusion selected). Queue: 2712 rules.
+4600 rules inserted. Base: 4231 rules (50 with conclusion selected). Queue: 2680 rules.
+4800 rules inserted. Base: 4383 rules (50 with conclusion selected). Queue: 2594 rules.
+5000 rules inserted. Base: 4563 rules (50 with conclusion selected). Queue: 2468 rules.
+5200 rules inserted. Base: 4742 rules (50 with conclusion selected). Queue: 2491 rules.
+5400 rules inserted. Base: 4875 rules (53 with conclusion selected). Queue: 2630 rules.
+5600 rules inserted. Base: 4999 rules (54 with conclusion selected). Queue: 2652 rules.
+5800 rules inserted. Base: 5143 rules (54 with conclusion selected). Queue: 2609 rules.
+6000 rules inserted. Base: 5343 rules (54 with conclusion selected). Queue: 2409 rules.
+6200 rules inserted. Base: 5543 rules (54 with conclusion selected). Queue: 2209 rules.
+6400 rules inserted. Base: 5743 rules (54 with conclusion selected). Queue: 2009 rules.
+6600 rules inserted. Base: 5943 rules (54 with conclusion selected). Queue: 1809 rules.
+6800 rules inserted. Base: 6143 rules (54 with conclusion selected). Queue: 1609 rules.
+7000 rules inserted. Base: 6343 rules (54 with conclusion selected). Queue: 1409 rules.
+7200 rules inserted. Base: 6455 rules (57 with conclusion selected). Queue: 1326 rules.
+7400 rules inserted. Base: 6547 rules (58 with conclusion selected). Queue: 1338 rules.
+7600 rules inserted. Base: 6653 rules (59 with conclusion selected). Queue: 1315 rules.
+7800 rules inserted. Base: 6805 rules (68 with conclusion selected). Queue: 1181 rules.
+8000 rules inserted. Base: 6950 rules (83 with conclusion selected). Queue: 1230 rules.
+8200 rules inserted. Base: 7098 rules (99 with conclusion selected). Queue: 1277 rules.
+8400 rules inserted. Base: 7298 rules (99 with conclusion selected). Queue: 1244 rules.
+8600 rules inserted. Base: 7453 rules (120 with conclusion selected). Queue: 1137 rules.
+8800 rules inserted. Base: 7539 rules (138 with conclusion selected). Queue: 1088 rules.
+9000 rules inserted. Base: 7653 rules (164 with conclusion selected). Queue: 1015 rules.
+9200 rules inserted. Base: 7824 rules (165 with conclusion selected). Queue: 878 rules.
+9400 rules inserted. Base: 8008 rules (183 with conclusion selected). Queue: 726 rules.
+9600 rules inserted. Base: 8194 rules (188 with conclusion selected). Queue: 685 rules.
+9800 rules inserted. Base: 8332 rules (206 with conclusion selected). Queue: 573 rules.
+10000 rules inserted. Base: 8438 rules (243 with conclusion selected). Queue: 478 rules.
+10200 rules inserted. Base: 8500 rules (249 with conclusion selected). Queue: 355 rules.
+10400 rules inserted. Base: 8675 rules (261 with conclusion selected). Queue: 306 rules.
+10600 rules inserted. Base: 8586 rules (280 with conclusion selected). Queue: 196 rules.
+10800 rules inserted. Base: 8621 rules (304 with conclusion selected). Queue: 219 rules.
+11000 rules inserted. Base: 8755 rules (312 with conclusion selected). Queue: 272 rules.
+11200 rules inserted. Base: 8859 rules (320 with conclusion selected). Queue: 239 rules.
+11400 rules inserted. Base: 8924 rules (340 with conclusion selected). Queue: 138 rules.
+Starting query not (event(CAccept(PAN_3,TX_2)) && event(BAccept(kbt_2,PAN_3,TX_2)))
+goal reachable: begin(ProcessingTransation(sessNonce_1,(TXdata_2,HI))) && attacker(TXdata_2) -> end(CAccept(PAN_3,(TXdata_2,HI))) && end(BAccept(kbt[],PAN_3,(TXdata_2,HI)))
+Abbreviations:
+PAN_3 = PAN[!1 = @sid]
+c_2 = c[!1 = @sid]
+a_1 = a[Z1 = R,!2 = @sid_1,!1 = @sid]
+mk_3 = mk[!1 = @sid]
+PIN_3 = PIN[!1 = @sid]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,HI),smult(c_2,smult(a_1,R)),enc(((a_1,PAN_3,(TXdata_2,HI),NO),mac((a_1,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_1,smult(c_2,smult(bt[],R))))),PIN_3),kbt[]),!1 = @sid_2]
+
+Derivation:
+Abbreviations:
+PAN_3 = PAN[!1 = @sid]
+PIN_3 = PIN[!1 = @sid]
+c_2 = c[!1 = @sid]
+a_1 = a[Z1 = R,!2 = @sid_1,!1 = @sid]
+mk_3 = mk[!1 = @sid]
+a_2 = a[Z1 = R,!2 = @sid_2,!1 = @sid]
+sessNonce_1 = sessNonce[x = enc(((TXdata_2,HI),smult(c_2,smult(a_2,R)),enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))),PIN_3),kbt[]),!1 = @sid_3]
+
+1. The attacker initially knows kbt[].
+attacker(kbt[]).
+
+2. The message PIN_3 may be sent to the attacker at output {10}.
+attacker(PIN_3).
+
+3. Using the function R the attacker may obtain R.
+attacker(R).
+
+4. The message R that the attacker may have by 3 may be received at input {18}.
+So the message smult(c_2,smult(a_2,R)) may be sent to the attacker at output {22}.
+attacker(smult(c_2,smult(a_2,R))).
+
+5. By 4, the attacker may know smult(c_2,smult(a_2,R)).
+Using the function h the attacker may obtain h(smult(c_2,smult(a_2,R))).
+attacker(h(smult(c_2,smult(a_2,R)))).
+
+6. The message ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])) may be sent to the attacker at output {55}.
+attacker(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[]))).
+
+7. By 6, the attacker may know ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+Using the function 2-proj-2-tuple the attacker may obtain sign((MM,smult(bt[],R)),s[]).
+attacker(sign((MM,smult(bt[],R)),s[])).
+
+8. By 6, the attacker may know ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+Using the function 1-proj-2-tuple the attacker may obtain (MM,smult(bt[],R)).
+attacker((MM,smult(bt[],R))).
+
+9. By 8, the attacker may know (MM,smult(bt[],R)).
+Using the function 2-proj-2-tuple the attacker may obtain smult(bt[],R).
+attacker(smult(bt[],R)).
+
+10. Using the function MM the attacker may obtain MM.
+attacker(MM).
+
+11. By 10, the attacker may know MM.
+By 9, the attacker may know smult(bt[],R).
+Using the function 2-tuple the attacker may obtain (MM,smult(bt[],R)).
+attacker((MM,smult(bt[],R))).
+
+12. By 11, the attacker may know (MM,smult(bt[],R)).
+By 7, the attacker may know sign((MM,smult(bt[],R)),s[]).
+Using the function 2-tuple the attacker may obtain ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+attacker(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[]))).
+
+13. By 12, the attacker may know ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+By 5, the attacker may know h(smult(c_2,smult(a_2,R))).
+Using the function enc the attacker may obtain enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_2,R)))).
+attacker(enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_2,R))))).
+
+14. The attacker has some term uPin_1.
+attacker(uPin_1).
+
+15. Using the function HI the attacker may obtain HI.
+attacker(HI).
+
+16. We assume as hypothesis that
+attacker(TXdata_2).
+
+17. By 16, the attacker may know TXdata_2.
+By 15, the attacker may know HI.
+Using the function 2-tuple the attacker may obtain (TXdata_2,HI).
+attacker((TXdata_2,HI)).
+
+18. By 17, the attacker may know (TXdata_2,HI).
+By 14, the attacker may know uPin_1.
+Using the function 2-tuple the attacker may obtain ((TXdata_2,HI),uPin_1).
+attacker(((TXdata_2,HI),uPin_1)).
+
+19. By 18, the attacker may know ((TXdata_2,HI),uPin_1).
+By 5, the attacker may know h(smult(c_2,smult(a_2,R))).
+Using the function enc the attacker may obtain enc(((TXdata_2,HI),uPin_1),h(smult(c_2,smult(a_2,R)))).
+attacker(enc(((TXdata_2,HI),uPin_1),h(smult(c_2,smult(a_2,R))))).
+
+20. The message R that the attacker may have by 3 may be received at input {18}.
+The message enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_2,R)))) that the attacker may have by 13 may be received at input {26}.
+The message enc(((TXdata_2,HI),uPin_1),h(smult(c_2,smult(a_2,R)))) that the attacker may have by 19 may be received at input {32}.
+We have uPin_1 ≠ PIN_3.
+So the message enc(((TXdata_2,HI),NO,enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R)))))),h(smult(c_2,smult(a_2,R)))) may be sent to the attacker at output {50}.
+attacker(enc(((TXdata_2,HI),NO,enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R)))))),h(smult(c_2,smult(a_2,R))))).
+
+21. By 20, the attacker may know enc(((TXdata_2,HI),NO,enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R)))))),h(smult(c_2,smult(a_2,R)))).
+By 5, the attacker may know h(smult(c_2,smult(a_2,R))).
+Using the function dec the attacker may obtain ((TXdata_2,HI),NO,enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R)))))).
+attacker(((TXdata_2,HI),NO,enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))))).
+
+22. By 21, the attacker may know ((TXdata_2,HI),NO,enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R)))))).
+Using the function 3-proj-3-tuple the attacker may obtain enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))).
+attacker(enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R)))))).
+
+23. By 17, the attacker may know (TXdata_2,HI).
+By 4, the attacker may know smult(c_2,smult(a_2,R)).
+By 22, the attacker may know enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))).
+By 2, the attacker may know PIN_3.
+Using the function 4-tuple the attacker may obtain ((TXdata_2,HI),smult(c_2,smult(a_2,R)),enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))),PIN_3).
+attacker(((TXdata_2,HI),smult(c_2,smult(a_2,R)),enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))),PIN_3)).
+
+24. By 23, the attacker may know ((TXdata_2,HI),smult(c_2,smult(a_2,R)),enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))),PIN_3).
+By 1, the attacker may know kbt[].
+Using the function enc the attacker may obtain enc(((TXdata_2,HI),smult(c_2,smult(a_2,R)),enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))),PIN_3),kbt[]).
+attacker(enc(((TXdata_2,HI),smult(c_2,smult(a_2,R)),enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))),PIN_3),kbt[])).
+
+25. The entry si(PAN_3,PIN_3,mk_3,smult(c_2,R)) may be inserted in a table at insert {53}.
+table(si(PAN_3,PIN_3,mk_3,smult(c_2,R))).
+
+26. The message enc(((TXdata_2,HI),smult(c_2,smult(a_2,R)),enc(((a_2,PAN_3,(TXdata_2,HI),NO),mac((a_2,PAN_3,(TXdata_2,HI),NO),mk_3)),h(smult(a_2,smult(c_2,smult(bt[],R))))),PIN_3),kbt[]) that the attacker may have by 24 may be received at input {59}.
+The event ProcessingTransation(sessNonce_1,(TXdata_2,HI)) may be executed at {62}.
+The entry si(PAN_3,PIN_3,mk_3,smult(c_2,R)) that may be in a table by 25 may be read at get {93}.
+We have NO ≠ OK.
+So event BAccept(kbt[],PAN_3,(TXdata_2,HI)) may be executed at {78}.
+end(BAccept(kbt[],PAN_3,(TXdata_2,HI))).
+
+27. The message R that the attacker may have by 3 may be received at input {18}.
+So the message smult(c_2,smult(a_1,R)) may be sent to the attacker at output {22}.
+attacker(smult(c_2,smult(a_1,R))).
+
+28. By 27, the attacker may know smult(c_2,smult(a_1,R)).
+Using the function h the attacker may obtain h(smult(c_2,smult(a_1,R))).
+attacker(h(smult(c_2,smult(a_1,R)))).
+
+29. By 12, the attacker may know ((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])).
+By 28, the attacker may know h(smult(c_2,smult(a_1,R))).
+Using the function enc the attacker may obtain enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_1,R)))).
+attacker(enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_1,R))))).
+
+30. By 17, the attacker may know (TXdata_2,HI).
+By 2, the attacker may know PIN_3.
+Using the function 2-tuple the attacker may obtain ((TXdata_2,HI),PIN_3).
+attacker(((TXdata_2,HI),PIN_3)).
+
+31. By 30, the attacker may know ((TXdata_2,HI),PIN_3).
+By 28, the attacker may know h(smult(c_2,smult(a_1,R))).
+Using the function enc the attacker may obtain enc(((TXdata_2,HI),PIN_3),h(smult(c_2,smult(a_1,R)))).
+attacker(enc(((TXdata_2,HI),PIN_3),h(smult(c_2,smult(a_1,R))))).
+
+32. The message R that the attacker may have by 3 may be received at input {18}.
+The message enc(((MM,smult(bt[],R)),sign((MM,smult(bt[],R)),s[])),h(smult(c_2,smult(a_1,R)))) that the attacker may have by 29 may be received at input {26}.
+The message enc(((TXdata_2,HI),PIN_3),h(smult(c_2,smult(a_1,R)))) that the attacker may have by 31 may be received at input {32}.
+So event CAccept(PAN_3,(TXdata_2,HI)) may be executed at {43}.
+end(CAccept(PAN_3,(TXdata_2,HI))).
+
+33. By 32, end(CAccept(PAN_3,(TXdata_2,HI))).
+By 26, end(BAccept(kbt[],PAN_3,(TXdata_2,HI))).
+The goals are reached, combined in the following fact:
+end(CAccept(PAN_3,(TXdata_2,HI))) && end(BAccept(kbt[],PAN_3,(TXdata_2,HI))).
+
+
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+new s: sskey creating s_1 at {1}
+
+new chiMM: svkey creating chiMM_1 at {2}
+
+out(cout, ~M) with ~M = pks(s_1) at {3}
+
+out(cout, ~M_1) with ~M_1 = pkv(chiMM_1) at {4}
+
+new bt: scalar creating bt_2 at {54}
+
+out(cout, ((MM,~M_2),~M_3)) with ~M_2 = smult(bt_2,R), ~M_3 = sign((MM,smult(bt_2,R)),s_1) at {55}
+
+new PIN: text creating PIN_3 at {6} in copy a_1
+
+new mk: key creating mk_3 at {7} in copy a_1
+
+new c: scalar creating c_2 at {8} in copy a_1
+
+new PAN: text creating PAN_3 at {9} in copy a_1
+
+out(cout, ~M_4) with ~M_4 = PIN_3 at {10} in copy a_1
+
+insert si(PAN_3,PIN_3,mk_3,smult(c_2,R)) at {53} in copy a_1
+
+in(card, R) at {18} in copy a_1, a_2
+
+new a: scalar creating a_3 at {20} in copy a_1, a_2
+
+out(card, ~M_5) with ~M_5 = smult(a_3,smult(c_2,R)) at {22} in copy a_1, a_2
+
+event SecretPin(PIN_3) at {24} in copy a_1, a_2
+
+event SecretKey(mk_3) at {25} in copy a_1, a_2
+
+in(card, enc(((MM,~M_2),~M_3),h(~M_5))) with enc(((MM,~M_2),~M_3),h(~M_5)) = enc(((MM,smult(bt_2,R)),sign((MM,smult(bt_2,R)),s_1)),h(smult(c_2,smult(a_3,R)))) at {26} in copy a_1, a_2
+
+out(card, ~M_6) with ~M_6 = enc((smult(a_3,smult(c_2,R)),smult(a_3,vsign(smult(c_2,R),chiMM_1))),h(smult(a_3,smult(c_2,R)))) at {31} in copy a_1, a_2
+
+in(card, enc(((a_4,HI),~M_4),h(~M_5))) with enc(((a_4,HI),~M_4),h(~M_5)) = enc(((a_4,HI),PIN_3),h(smult(c_2,smult(a_3,R)))) at {32} in copy a_1, a_2
+
+event SecretAC((a_3,PAN_3,(a_4,HI),OK)) at {37} in copy a_1, a_2
+
+event CAccept(PAN_3,(a_4,HI)) at {43} in copy a_1, a_2 (goal)
+
+event CRunning(R,smult(a_3,smult(c_2,R)),enc(((MM,smult(bt_2,R)),sign((MM,smult(bt_2,R)),s_1)),h(smult(c_2,smult(a_3,R)))),enc((smult(a_3,smult(c_2,R)),smult(a_3,vsign(smult(c_2,R),chiMM_1))),h(smult(a_3,smult(c_2,R)))),enc(((a_4,HI),PIN_3),h(smult(c_2,smult(a_3,R)))),enc(((a_4,HI),OK,enc(((a_3,PAN_3,(a_4,HI),OK),mac((a_3,PAN_3,(a_4,HI),OK),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))),h(smult(a_3,smult(c_2,R))))) at {44} in copy a_1, a_2
+
+event CRunningWithBank(a_3,PAN_3,(a_4,HI),enc(((a_3,PAN_3,(a_4,HI),OK),mac((a_3,PAN_3,(a_4,HI),OK),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))) at {45} in copy a_1, a_2
+
+out(card, ~M_7) with ~M_7 = enc(((a_4,HI),OK,enc(((a_3,PAN_3,(a_4,HI),OK),mac((a_3,PAN_3,(a_4,HI),OK),mk_3)),h(smult(a_3,smult(c_2,smult(bt_2,R)))))),h(smult(a_3,smult(c_2,R)))) at {46} in copy a_1, a_2
+
+in(card, R) at {18} in copy a_1, a_5
+
+new a: scalar creating a_6 at {20} in copy a_1, a_5
+
+out(card, ~M_8) with ~M_8 = smult(a_6,smult(c_2,R)) at {22} in copy a_1, a_5
+
+event SecretPin(PIN_3) at {24} in copy a_1, a_5
+
+event SecretKey(mk_3) at {25} in copy a_1, a_5
+
+in(card, enc(((MM,~M_2),~M_3),h(~M_8))) with enc(((MM,~M_2),~M_3),h(~M_8)) = enc(((MM,smult(bt_2,R)),sign((MM,smult(bt_2,R)),s_1)),h(smult(c_2,smult(a_6,R)))) at {26} in copy a_1, a_5
+
+out(card, ~M_9) with ~M_9 = enc((smult(a_6,smult(c_2,R)),smult(a_6,vsign(smult(c_2,R),chiMM_1))),h(smult(a_6,smult(c_2,R)))) at {31} in copy a_1, a_5
+
+in(card, enc(((a_4,HI),a_7),h(~M_8))) with enc(((a_4,HI),a_7),h(~M_8)) = enc(((a_4,HI),a_7),h(smult(c_2,smult(a_6,R)))) at {32} in copy a_1, a_5
+
+event SecretAC((a_6,PAN_3,(a_4,HI),OK)) at {37} in copy a_1, a_5
+
+event CRunning(R,smult(a_6,smult(c_2,R)),enc(((MM,smult(bt_2,R)),sign((MM,smult(bt_2,R)),s_1)),h(smult(c_2,smult(a_6,R)))),enc((smult(a_6,smult(c_2,R)),smult(a_6,vsign(smult(c_2,R),chiMM_1))),h(smult(a_6,smult(c_2,R)))),enc(((a_4,HI),a_7),h(smult(c_2,smult(a_6,R)))),enc(((a_4,HI),NO,enc(((a_6,PAN_3,(a_4,HI),NO),mac((a_6,PAN_3,(a_4,HI),NO),mk_3)),h(smult(a_6,smult(c_2,smult(bt_2,R)))))),h(smult(a_6,smult(c_2,R))))) at {48} in copy a_1, a_5
+
+event CRunningWithBank(a_6,PAN_3,(a_4,HI),enc(((a_6,PAN_3,(a_4,HI),NO),mac((a_6,PAN_3,(a_4,HI),NO),mk_3)),h(smult(a_6,smult(c_2,smult(bt_2,R)))))) at {49} in copy a_1, a_5
+
+out(card, ~M_10) with ~M_10 = enc(((a_4,HI),NO,enc(((a_6,PAN_3,(a_4,HI),NO),mac((a_6,PAN_3,(a_4,HI),NO),mk_3)),h(smult(a_6,smult(c_2,smult(bt_2,R)))))),h(smult(a_6,smult(c_2,R)))) at {50} in copy a_1, a_5
+
+in(bank, enc(((a_4,HI),~M_8,3-proj-3-tuple(dec(~M_10,h(~M_8))),~M_4),kbt)) with enc(((a_4,HI),~M_8,3-proj-3-tuple(dec(~M_10,h(~M_8))),~M_4),kbt) = enc(((a_4,HI),smult(c_2,smult(a_6,R)),enc(((a_6,PAN_3,(a_4,HI),NO),mac((a_6,PAN_3,(a_4,HI),NO),mk_3)),h(smult(a_6,smult(c_2,smult(bt_2,R))))),PIN_3),kbt) at {59} in copy a_8
+
+new sessNonce: bitstring creating sessNonce_1 at {61} in copy a_8
+
+event ProcessingTransation(sessNonce_1,(a_4,HI)) at {62} in copy a_8
+
+get si(PAN_3,PIN_3,mk_3,smult(c_2,R)) at {93} in copy a_8
+
+event BAccept(kbt,PAN_3,(a_4,HI)) at {78} in copy a_8 (goal)
+
+The event CAccept(PAN_3,(a_4,HI)) is executed at {43} in copy a_1, a_2.
+The event BAccept(kbt,PAN_3,(a_4,HI)) is executed at {78} in copy a_8.
+A trace has been found.
+RESULT not (event(CAccept(PAN_3,TX_2)) && event(BAccept(kbt_2,PAN_3,TX_2))) is false.
+
+--------------------------------------------------------------
+Verification summary:
+
+Query(ies):
+ - Query inj-event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) ==> inj-event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3)) is true.
+ - Query not (event(SecretKey(x_1)) && attacker(x_1)) is true.
+ - Query not (event(SecretAC(x_1)) && attacker(x_1)) is true.
+ - Query not (event(SecretPin(x_1)) && attacker(x_1)) is false.
+ - Query not (event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) && event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3))) is false.
+ - Query not (event(CAccept(PAN_3,TX_2)) && event(BAccept(kbt_2,PAN_3,TX_2))) is false.
+Associated axiom(s):
+ - Axiom event(ProcessingTransation(sessNonce1,TX_2)) && event(ProcessingTransation(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
+ - Axiom event(TerminalProcessingTransaction(sessNonce1,TX_2)) && event(TerminalProcessingTransaction(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
+ - Axiom event(TERM_CARD_TX_PIN(TX_2,PIN1)) && event(TERM_BANK_TX_PIN(TX_2,PIN2)) ==> PIN1 = PIN2 in process 1.
+
+--------------------------------------------------------------
