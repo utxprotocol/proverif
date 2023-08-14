@@ -1,0 +1,68 @@
+(* observational equivalence cannot be proved*)
+
+free cout, card, term: channel.
+
+set equivalenceRelation = observational.
+set preciseActions = true.
+set verboseClauses = explained.
+set verboseCompleted = true.
+
+type key.
+type sskey.
+type spkey.
+type point.
+type scalar.
+
+fun smult(scalar, point): point.
+fun h(point): key.
+fun pk(sskey): spkey.
+fun sign(point , sskey): bitstring.
+fun enc(bitstring, key): bitstring.
+
+const G: point [data].
+
+reduc forall m: bitstring, k: key; dec(enc(m, k), k) = m.
+reduc forall m: point, k: sskey; check(sign(m, k), pk(k)) = m.
+
+equation forall a: scalar, b: scalar; smult(a, smult(b, G)) = smult(b, smult(a, G)).
+equation forall a: scalar, b: scalar, c: scalar; smult(a, smult(b, smult(c, G))) = smult(b, smult(a, smult(c, G))).
+
+event snd1(point).
+event rec1(point).
+event snd2(point).
+event rec2(point).
+event cardTerm(key, bitstring).
+event terminalTerm(key, bitstring).
+
+let C(s: sskey, c: scalar, ch: channel) =
+  new a: scalar;
+  event snd1(smult(a, smult(c, G)));
+  out(ch, smult(a, smult(c, G)));
+    in(ch, y: point);
+    event rec2(y);  
+      let k = h(smult(a, smult(c, y))) in
+      let cert = (smult(c, G), sign(smult(c, G), s)) in
+      event cardTerm(k, enc(((a, smult(c, G)), cert), k));
+      out(ch, enc(((a, smult(c, G)), cert), k)).
+
+
+
+(*populate system with cards*)
+let PopCard(s: sskey)=
+    new c: scalar;
+    !(new chc: channel;
+      out(card, chc);
+      C(s, c, chc)).
+
+let PopCardIdeal(s: sskey)=
+    new c: scalar;
+    new chc: channel;
+      out(card, chc);
+      C(s, c, chc).
+
+     
+
+equivalence
+  new s: sskey; out(cout, pk(s)); !PopCard(s)
+
+  new s: sskey; out(cout, pk(s)); !PopCardIdeal(s) 

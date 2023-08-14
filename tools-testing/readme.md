@@ -1,0 +1,3 @@
+T1 models are the outputs of the tool described in *Proving Unlinkability using ProVerif through Desynchronised Bi-Processes* (CSF2023) by David Baelde, Alexandre Debant and Stéphanie Delaune. They should be processed by the regular ProVerif, as well as PV models.
+
+T2 models should be process by the tool described in *Indistinguishability Beyond Diff-Equivalence* (CSF2023) by Vincent Cheval and Itsaka Rakotonirina.
