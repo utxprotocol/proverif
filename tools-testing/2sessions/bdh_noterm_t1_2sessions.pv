@@ -1,0 +1,70 @@
+(* TRUE - incorrect result *)
+
+set allowDiffPatterns = true.
+
+free badL:bitstring.
+free badR:bitstring.
+free c_error:channel.
+free cout:channel.
+free card:channel.
+free term:channel.
+
+type key.
+type sskey.
+type spkey.
+type point.
+type scalar.
+
+fun smult(scalar,point):point.
+fun h(point):key.
+fun pk(sskey):spkey.
+fun sign(point,sskey):bitstring.
+fun enc(bitstring,key):bitstring.
+
+const G:point [data].
+
+reduc forall m:bitstring,k:key; dec(enc(m,k),k) = m.
+
+reduc forall m:point,k:sskey; check(sign(m,k),pk(k)) = m.
+
+equation forall a:scalar,b:scalar; smult(a,smult(b,G)) = smult(b,smult(a,G)).
+equation forall a:scalar,b:scalar,c:scalar; smult(a,smult(b,smult(c,G))) = smult(b,smult(a,smult(c,G))).
+
+event snd1(point).
+event rec1(point).
+event snd2(point).
+event rec2(point).
+event cardTerm(key,bitstring).
+event terminalTerm(key,bitstring).
+
+process
+  new s:sskey;
+  out(cout,pk(s));
+  new c:scalar;
+  new chc:channel;
+  out(card,chc);
+  (
+    new a:scalar;
+    event snd1(smult(a,smult(c,G)));
+    out(chc,smult(a,smult(c,G)));
+    in(chc,choice[xL:point,xR1:point]);
+    event rec2(choice[xL,xR1]);
+    let choice[xL2:key,xR3:key] = h(smult(a,smult(c,choice[xL,xR1]))) in
+    let choice[xL4:bitstring,xR5:bitstring] = (smult(c,G),sign(smult(c,G),s)) in
+    event cardTerm(choice[xL2,xR3],enc(((a,smult(c,G)),choice[xL4,xR5]),choice[xL2,xR3]));
+    out(chc,enc(((a,smult(c,G)),choice[xL4,xR5]),choice[xL2,xR3]));
+    0
+  ) | (
+    new chc1:channel;
+    out(card,chc1);
+    new a:scalar;
+    event snd1(smult(a,smult(c,G)));
+    out(chc1,smult(a,smult(c,G)));
+    in(chc1,choice[xL:point,xR1:point]);
+    event rec2(choice[xL,xR1]);
+    let choice[xL2:key,xR3:key] = h(smult(a,smult(c,choice[xL,xR1]))) in
+    let choice[xL4:bitstring,xR5:bitstring] = (smult(c,G),sign(smult(c,G),s)) in
+    event cardTerm(choice[xL2,xR3],enc(((a,smult(c,G)),choice[xL4,xR5]),choice[xL2,xR3]));
+    out(chc1,enc(((a,smult(c,G)),choice[xL4,xR5]),choice[xL2,xR3]));
+    0
+  )
