@@ -1,4 +1,4 @@
-(* observational - freezes *)
+(* observational - running forever *)
 
 free cuser, cout, card, term, bank: channel.
 

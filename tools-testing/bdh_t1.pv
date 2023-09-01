@@ -1,4 +1,4 @@
-(*TRUE - incorrect result*)
+(*TRUE - incorrect result, time: 8m2.969s *)
 
 set allowDiffPatterns = true.
 

@@ -1,4 +1,4 @@
-(* observational - true*)
+(* observational - true, time: 44m15.535s *)
 
 free cout, card, term: channel.
  

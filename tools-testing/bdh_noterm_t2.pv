@@ -1,4 +1,4 @@
-(* observational equivalence cannot be proved*)
+(* observational equivalence cannot be proved, time: 41m9.070s *)
 
 free cout, card, term: channel.
 

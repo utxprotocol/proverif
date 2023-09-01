@@ -1,4 +1,4 @@
-(* diff-equivalence is true *)
+(* diff-equivalence is true, time: 4m21.845s *)
 (* misleading result, there IS an attack described in CSF'22 *)
 set allowDiffPatterns = true.
 

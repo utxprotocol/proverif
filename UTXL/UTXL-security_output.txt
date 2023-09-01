@@ -1,4 +1,3 @@
-
 Linear part:
 smult(a,smult(b,R)) = smult(b,smult(a,R))
 smult(a,smult(b,smult(c,R))) = smult(b,smult(a,smult(c,R)))
@@ -315,9 +314,9 @@ Process 0 (that is, the initial process):
     )
 )
 
--- Axiom event(ProcessingTransation(sessNonce1,TX_3)) && event(ProcessingTransation(sessNonce2,TX_3)) ==> sessNonce1 = sessNonce2 in process 1.
--- Axiom event(TerminalProcessingTransaction(sessNonce1,TX_3)) && event(TerminalProcessingTransaction(sessNonce2,TX_3)) ==> sessNonce1 = sessNonce2 in process 1.
--- Axiom event(TERM_CARD_TX_PIN(TX_3,PIN1)) && event(TERM_BANK_TX_PIN(TX_3,PIN2)) ==> PIN1 = PIN2 in process 1.
+-- Restriction event(ProcessingTransation(sessNonce1,TX_3)) && event(ProcessingTransation(sessNonce2,TX_3)) ==> sessNonce1 = sessNonce2 in process 1.
+-- Restriction event(TerminalProcessingTransaction(sessNonce1,TX_3)) && event(TerminalProcessingTransaction(sessNonce2,TX_3)) ==> sessNonce1 = sessNonce2 in process 1.
+-- Restriction event(TERM_CARD_TX_PIN(TX_3,PIN1)) && event(TERM_BANK_TX_PIN(TX_3,PIN2)) ==> PIN1 = PIN2 in process 1.
 -- Query inj-event(TCommitWithC(z1,z2,ecert,emcert,etx,eac)) ==> inj-event(CRunning(z1,z2,ecert,emcert,etx,eac)) in process 1.
 Translating the process into Horn clauses...
 Completing...
@@ -5050,10 +5049,12 @@ Query(ies):
  - Query not (event(BCommitWithTC(req_1)) && event(TrunningWithBC(req_1,z1,z2,ecert,emcert,etx,eac)) && event(CRunning(z1,z2,ecert,emcert,etx,eac))) is false.
  - Query not (event(BCommitWithC(a_1,PAN_3,TX_3,EAC_4)) && event(CRunningWithBank(a_1,PAN_3,TX_3,EAC_4))) is false.
  - Query not (event(CAccept(PAN_3,TX_3)) && event(BAccept(kbt_3,PAN_3,TX_3)) && event(TAccept(kbt_3,TX_3))) is false.
-Associated axiom(s):
- - Axiom event(ProcessingTransation(sessNonce1,TX_3)) && event(ProcessingTransation(sessNonce2,TX_3)) ==> sessNonce1 = sessNonce2 in process 1.
- - Axiom event(TerminalProcessingTransaction(sessNonce1,TX_3)) && event(TerminalProcessingTransaction(sessNonce2,TX_3)) ==> sessNonce1 = sessNonce2 in process 1.
- - Axiom event(TERM_CARD_TX_PIN(TX_3,PIN1)) && event(TERM_BANK_TX_PIN(TX_3,PIN2)) ==> PIN1 = PIN2 in process 1.
+Associated restriction(s):
+ - Restriction event(ProcessingTransation(sessNonce1,TX_3)) && event(ProcessingTransation(sessNonce2,TX_3)) ==> sessNonce1 = sessNonce2 in process 1.
+ - Restriction event(TerminalProcessingTransaction(sessNonce1,TX_3)) && event(TerminalProcessingTransaction(sessNonce2,TX_3)) ==> sessNonce1 = sessNonce2 in process 1.
+ - Restriction event(TERM_CARD_TX_PIN(TX_3,PIN1)) && event(TERM_BANK_TX_PIN(TX_3,PIN2)) ==> PIN1 = PIN2 in process 1.
 
 --------------------------------------------------------------
 
+
+real    25m55.091s

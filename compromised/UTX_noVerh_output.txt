@@ -157,7 +157,7 @@ Process 0 (that is, the initial process):
                     {126}in(term, EReply: bitstring);
                     {127}let (=TX_2,reply: text) = dec(EReply,kbt_2) in
                     {128}event TCommitWithBC(enc((TX_2,Z2_2,EAC_3,uPIN_1),kbt_2),EReply,Z1_1,Z2_2,enc(crtT,k_1),EM,enc((TX_2,uPIN_1),k_1),EEAC);
-                    {129}if (reply = OK) then
+                    {129}if (reply = ACCEPT) then
                     {130}event TAccept(kbt_2,TX_2)
         ) | (
             {131}let TXtype_3: text = LO in
@@ -194,7 +194,7 @@ Process 0 (that is, the initial process):
                     {160}in(term, EReply_1: bitstring);
                     {161}let (=TX_3,reply_1: text) = dec(EReply_1,kbt_2) in
                     {162}event TCommitWithBC(enc((TX_3,Z2_3,EAC_4,uPIN_2),kbt_2),EReply_1,Z1_2,Z2_3,enc(crtT,k_2),EM_1,enc((TX_3,uPIN_2),k_2),EEAC_1);
-                    {163}if (reply_1 = OK) then
+                    {163}if (reply_1 = ACCEPT) then
                     {164}event TAccept(kbt_2,TX_3)
         ) | (
             {165}let TXtype_4: text = HI in
@@ -231,7 +231,7 @@ Process 0 (that is, the initial process):
                     {194}in(term, EReply_2: bitstring);
                     {195}let (=TX_4,reply_2: text) = dec(EReply_2,kbt_2) in
                     {196}event TCommitWithBC(enc((TX_4,Z2_4,EAC_5,uPIN_3),kbt_2),EReply_2,Z1_3,Z2_4,enc(crtT,k_3),EM_2,enc((TX_4,uPIN_3),k_3),EEAC_2);
-                    {197}if (reply_2 = OK) then
+                    {197}if (reply_2 = ACCEPT) then
                     {198}event TAccept(kbt_2,TX_4)
         )
     )
@@ -384,7 +384,7 @@ Process 0 (that is, the initial process):
                     {126}in(term, EReply: bitstring);
                     {127}let (=TX_2,reply: text) = dec(EReply,kbt_2) in
                     {128}event TCommitWithBC(enc((TX_2,Z2_2,EAC_3,uPIN_1),kbt_2),EReply,Z1_1,Z2_2,enc(crtT,k_1),EM,enc((TX_2,uPIN_1),k_1),EEAC);
-                    {129}if (reply = OK) then
+                    {129}if (reply = ACCEPT) then
                     {130}event TAccept(kbt_2,TX_2)
         ) | (
             {133}new TXdata_3: bitstring;
@@ -421,7 +421,7 @@ Process 0 (that is, the initial process):
                     {160}in(term, EReply_1: bitstring);
                     {161}let (=TX_3,reply_1: text) = dec(EReply_1,kbt_2) in
                     {162}event TCommitWithBC(enc((TX_3,Z2_3,EAC_4,uPIN_2),kbt_2),EReply_1,Z1_2,Z2_3,enc(crtT,k_2),EM_1,enc((TX_3,uPIN_2),k_2),EEAC_1);
-                    {163}if (reply_1 = OK) then
+                    {163}if (reply_1 = ACCEPT) then
                     {164}event TAccept(kbt_2,TX_3)
         ) | (
             {167}new TXdata_4: bitstring;
@@ -458,15 +458,15 @@ Process 0 (that is, the initial process):
                     {194}in(term, EReply_2: bitstring);
                     {195}let (=TX_4,reply_2: text) = dec(EReply_2,kbt_2) in
                     {196}event TCommitWithBC(enc((TX_4,Z2_4,EAC_5,uPIN_3),kbt_2),EReply_2,Z1_3,Z2_4,enc(crtT,k_3),EM_2,enc((TX_4,uPIN_3),k_3),EEAC_2);
-                    {197}if (reply_2 = OK) then
+                    {197}if (reply_2 = ACCEPT) then
                     {198}event TAccept(kbt_2,TX_4)
         )
     )
 )
 
--- Axiom event(ProcessingTransation(sessNonce1,TX_5)) && event(ProcessingTransation(sessNonce2,TX_5)) ==> sessNonce1 = sessNonce2 in process 1.
--- Axiom event(TerminalProcessingTransaction(sessNonce1,TX_5)) && event(TerminalProcessingTransaction(sessNonce2,TX_5)) ==> sessNonce1 = sessNonce2 in process 1.
--- Axiom event(TERM_CARD_TX_PIN(TX_5,PIN1)) && event(TERM_BANK_TX_PIN(TX_5,PIN2)) ==> PIN1 = PIN2 in process 1.
+-- Restriction event(ProcessingTransation(sessNonce1,TX_5)) && event(ProcessingTransation(sessNonce2,TX_5)) ==> sessNonce1 = sessNonce2 in process 1.
+-- Restriction event(TerminalProcessingTransaction(sessNonce1,TX_5)) && event(TerminalProcessingTransaction(sessNonce2,TX_5)) ==> sessNonce1 = sessNonce2 in process 1.
+-- Restriction event(TERM_CARD_TX_PIN(TX_5,PIN1)) && event(TERM_BANK_TX_PIN(TX_5,PIN2)) ==> PIN1 = PIN2 in process 1.
 -- Query inj-event(TCommitWithC(z1,z2,ecert,emcert,etx,eac)) ==> inj-event(CRunning(z1,z2,ecert,emcert,etx,eac)) in process 1.
 Translating the process into Horn clauses...
 Completing...
@@ -6073,22 +6073,24 @@ Completing...
 58600 rules inserted. Base: 39971 rules (1244 with conclusion selected). Queue: 2998 rules.
 58800 rules inserted. Base: 40159 rules (1244 with conclusion selected). Queue: 2869 rules.
 59000 rules inserted. Base: 40221 rules (1244 with conclusion selected). Queue: 2807 rules.
-59200 rules inserted. Base: 40336 rules (1264 with conclusion selected). Queue: 2692 rules.
-59400 rules inserted. Base: 40524 rules (1304 with conclusion selected). Queue: 2524 rules.
-59600 rules inserted. Base: 40687 rules (1334 with conclusion selected). Queue: 2369 rules.
-59800 rules inserted. Base: 40852 rules (1364 with conclusion selected). Queue: 2212 rules.
-60000 rules inserted. Base: 40987 rules (1364 with conclusion selected). Queue: 2089 rules.
-60200 rules inserted. Base: 41080 rules (1364 with conclusion selected). Queue: 2000 rules.
-60400 rules inserted. Base: 41088 rules (1374 with conclusion selected). Queue: 1776 rules.
-60600 rules inserted. Base: 41264 rules (1404 with conclusion selected). Queue: 1608 rules.
-60800 rules inserted. Base: 41385 rules (1404 with conclusion selected). Queue: 1430 rules.
-61000 rules inserted. Base: 41585 rules (1464 with conclusion selected). Queue: 1261 rules.
-61200 rules inserted. Base: 41785 rules (1524 with conclusion selected). Queue: 1071 rules.
-61400 rules inserted. Base: 41952 rules (1524 with conclusion selected). Queue: 953 rules.
-61600 rules inserted. Base: 41959 rules (1524 with conclusion selected). Queue: 740 rules.
-61800 rules inserted. Base: 42017 rules (1524 with conclusion selected). Queue: 580 rules.
-62000 rules inserted. Base: 42171 rules (1554 with conclusion selected). Queue: 384 rules.
-62200 rules inserted. Base: 42213 rules (1594 with conclusion selected). Queue: 164 rules.
+59200 rules inserted. Base: 40336 rules (1264 with conclusion selected). Queue: 2722 rules.
+59400 rules inserted. Base: 40524 rules (1304 with conclusion selected). Queue: 2584 rules.
+59600 rules inserted. Base: 40687 rules (1334 with conclusion selected). Queue: 2459 rules.
+59800 rules inserted. Base: 40852 rules (1364 with conclusion selected). Queue: 2332 rules.
+60000 rules inserted. Base: 40987 rules (1364 with conclusion selected). Queue: 2209 rules.
+60200 rules inserted. Base: 41080 rules (1364 with conclusion selected). Queue: 2120 rules.
+60400 rules inserted. Base: 41088 rules (1374 with conclusion selected). Queue: 1926 rules.
+60600 rules inserted. Base: 41264 rules (1404 with conclusion selected). Queue: 1848 rules.
+60800 rules inserted. Base: 41385 rules (1404 with conclusion selected). Queue: 1670 rules.
+61000 rules inserted. Base: 41585 rules (1464 with conclusion selected). Queue: 1501 rules.
+61200 rules inserted. Base: 41785 rules (1524 with conclusion selected). Queue: 1311 rules.
+61400 rules inserted. Base: 41952 rules (1524 with conclusion selected). Queue: 1193 rules.
+61600 rules inserted. Base: 41959 rules (1524 with conclusion selected). Queue: 980 rules.
+61800 rules inserted. Base: 42019 rules (1524 with conclusion selected). Queue: 800 rules.
+62000 rules inserted. Base: 42091 rules (1554 with conclusion selected). Queue: 654 rules.
+62200 rules inserted. Base: 42206 rules (1554 with conclusion selected). Queue: 452 rules.
+62400 rules inserted. Base: 42249 rules (1594 with conclusion selected). Queue: 268 rules.
+62600 rules inserted. Base: 42333 rules (1594 with conclusion selected). Queue: 156 rules.
 Starting query not (event(TAccept(kbt_3,TX_5)) && event(BReject(kbt_3,TX_5)))
 RESULT not (event(TAccept(kbt_3,TX_5)) && event(BReject(kbt_3,TX_5))) is true.
 -- Query not (event(SecretKey(x_1)) && attacker(x_1)) in process 1.
@@ -11143,26 +11145,28 @@ Completing...
 61600 rules inserted. Base: 42150 rules (1251 with conclusion selected). Queue: 3329 rules.
 61800 rules inserted. Base: 42350 rules (1251 with conclusion selected). Queue: 3220 rules.
 62000 rules inserted. Base: 42435 rules (1251 with conclusion selected). Queue: 3138 rules.
-62200 rules inserted. Base: 42523 rules (1258 with conclusion selected). Queue: 3050 rules.
-62400 rules inserted. Base: 42703 rules (1311 with conclusion selected). Queue: 2870 rules.
-62600 rules inserted. Base: 42884 rules (1325 with conclusion selected). Queue: 2734 rules.
-62800 rules inserted. Base: 43035 rules (1369 with conclusion selected). Queue: 2566 rules.
-63000 rules inserted. Base: 43205 rules (1371 with conclusion selected). Queue: 2438 rules.
-63200 rules inserted. Base: 43311 rules (1371 with conclusion selected). Queue: 2324 rules.
-63400 rules inserted. Base: 43200 rules (1371 with conclusion selected). Queue: 2156 rules.
-63600 rules inserted. Base: 43400 rules (1411 with conclusion selected). Queue: 1958 rules.
-63800 rules inserted. Base: 43576 rules (1451 with conclusion selected). Queue: 1797 rules.
-64000 rules inserted. Base: 43642 rules (1451 with conclusion selected). Queue: 1634 rules.
-64200 rules inserted. Base: 43842 rules (1511 with conclusion selected). Queue: 1436 rules.
-64400 rules inserted. Base: 44042 rules (1549 with conclusion selected). Queue: 1284 rules.
-64600 rules inserted. Base: 44238 rules (1571 with conclusion selected). Queue: 1138 rules.
-64800 rules inserted. Base: 44149 rules (1571 with conclusion selected). Queue: 958 rules.
-65000 rules inserted. Base: 44349 rules (1571 with conclusion selected). Queue: 758 rules.
-65200 rules inserted. Base: 44323 rules (1594 with conclusion selected). Queue: 598 rules.
-65400 rules inserted. Base: 44463 rules (1602 with conclusion selected). Queue: 390 rules.
-65600 rules inserted. Base: 44497 rules (1651 with conclusion selected). Queue: 170 rules.
+62200 rules inserted. Base: 42523 rules (1258 with conclusion selected). Queue: 3062 rules.
+62400 rules inserted. Base: 42703 rules (1311 with conclusion selected). Queue: 2930 rules.
+62600 rules inserted. Base: 42884 rules (1325 with conclusion selected). Queue: 2815 rules.
+62800 rules inserted. Base: 43035 rules (1369 with conclusion selected). Queue: 2686 rules.
+63000 rules inserted. Base: 43205 rules (1371 with conclusion selected). Queue: 2558 rules.
+63200 rules inserted. Base: 43311 rules (1371 with conclusion selected). Queue: 2444 rules.
+63400 rules inserted. Base: 43200 rules (1371 with conclusion selected). Queue: 2276 rules.
+63600 rules inserted. Base: 43400 rules (1411 with conclusion selected). Queue: 2138 rules.
+63800 rules inserted. Base: 43576 rules (1451 with conclusion selected). Queue: 2037 rules.
+64000 rules inserted. Base: 43642 rules (1451 with conclusion selected). Queue: 1874 rules.
+64200 rules inserted. Base: 43842 rules (1511 with conclusion selected). Queue: 1676 rules.
+64400 rules inserted. Base: 44042 rules (1549 with conclusion selected). Queue: 1524 rules.
+64600 rules inserted. Base: 44238 rules (1571 with conclusion selected). Queue: 1378 rules.
+64800 rules inserted. Base: 44149 rules (1571 with conclusion selected). Queue: 1198 rules.
+65000 rules inserted. Base: 44349 rules (1571 with conclusion selected). Queue: 998 rules.
+65200 rules inserted. Base: 44294 rules (1571 with conclusion selected). Queue: 831 rules.
+65400 rules inserted. Base: 44443 rules (1601 with conclusion selected). Queue: 668 rules.
+65600 rules inserted. Base: 44503 rules (1621 with conclusion selected). Queue: 490 rules.
+65800 rules inserted. Base: 44525 rules (1651 with conclusion selected). Queue: 282 rules.
+66000 rules inserted. Base: 44615 rules (1651 with conclusion selected). Queue: 162 rules.
 Starting query not (event(CAccept(PAN_3,TX_5)) && event(BAccept(kbt_3,PAN_3,TX_5)) && event(TAccept(kbt_3,TX_5)))
-200 rules inserted. Base: 150 rules (42 with conclusion selected). Queue: 8 rules.
+200 rules inserted. Base: 50 rules (42 with conclusion selected). Queue: 108 rules.
 goal reachable: begin(ProcessingTransation(sessNonce_1,(TXdata_5,HI))) && begin(TERM_BANK_TX_PIN((TXdata_5,HI),PIN_3)) && begin(TerminalProcessingTransaction(nonce_3,(TXdata_5,HI))) && begin(TERM_CARD_TX_PIN((TXdata_5,HI),PIN_3)) -> end(CAccept(PAN_3,(TXdata_5,HI))) && end(BAccept(kbt_3,PAN_3,(TXdata_5,HI))) && end(TAccept(kbt_3,(TXdata_5,HI)))
 Abbreviations:
 PAN_3 = PAN[!1 = @sid]
@@ -11439,9 +11443,12 @@ Query(ies):
  - Query not (event(BCommitWithTC(req_3)) && event(TrunningWithBC(req_3,z1,z2,ecert,emcert,etx,eac)) && event(CRunning(z1,z2,ecert,emcert,etx,eac))) is false.
  - Query not (event(BCommitWithC(a_1,PAN_3,TX_5,EAC_6)) && event(CRunningWithBank(a_1,PAN_3,TX_5,EAC_6))) is false.
  - Query not (event(CAccept(PAN_3,TX_5)) && event(BAccept(kbt_3,PAN_3,TX_5)) && event(TAccept(kbt_3,TX_5))) is false.
-Associated axiom(s):
- - Axiom event(ProcessingTransation(sessNonce1,TX_5)) && event(ProcessingTransation(sessNonce2,TX_5)) ==> sessNonce1 = sessNonce2 in process 1.
- - Axiom event(TerminalProcessingTransaction(sessNonce1,TX_5)) && event(TerminalProcessingTransaction(sessNonce2,TX_5)) ==> sessNonce1 = sessNonce2 in process 1.
- - Axiom event(TERM_CARD_TX_PIN(TX_5,PIN1)) && event(TERM_BANK_TX_PIN(TX_5,PIN2)) ==> PIN1 = PIN2 in process 1.
+Associated restriction(s):
+ - Restriction event(ProcessingTransation(sessNonce1,TX_5)) && event(ProcessingTransation(sessNonce2,TX_5)) ==> sessNonce1 = sessNonce2 in process 1.
+ - Restriction event(TerminalProcessingTransaction(sessNonce1,TX_5)) && event(TerminalProcessingTransaction(sessNonce2,TX_5)) ==> sessNonce1 = sessNonce2 in process 1.
+ - Restriction event(TERM_CARD_TX_PIN(TX_5,PIN1)) && event(TERM_BANK_TX_PIN(TX_5,PIN2)) ==> PIN1 = PIN2 in process 1.
 
 --------------------------------------------------------------
+
+
+real    95m58.004s

@@ -1,4 +1,4 @@
-(* for 2 sessions diff equivalence cannot be proved *)
+(* for 2 sessions diff equivalence cannot be proved, time: 2m55.300s *)
 
 free cout, card, term: channel.
 

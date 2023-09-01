@@ -231,9 +231,9 @@ Warning: identifier kbt rebound.
             {92}out(term, enc((TX_1,NO),kbt_1))
 )
 
--- Axiom event(ProcessingTransation(sessNonce1,TX_2)) && event(ProcessingTransation(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
--- Axiom event(TerminalProcessingTransaction(sessNonce1,TX_2)) && event(TerminalProcessingTransaction(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
--- Axiom event(TERM_CARD_TX_PIN(TX_2,PIN1)) && event(TERM_BANK_TX_PIN(TX_2,PIN2)) ==> PIN1 = PIN2 in process 1.
+-- Restriction event(ProcessingTransation(sessNonce1,TX_2)) && event(ProcessingTransation(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
+-- Restriction event(TerminalProcessingTransaction(sessNonce1,TX_2)) && event(TerminalProcessingTransaction(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
+-- Restriction event(TERM_CARD_TX_PIN(TX_2,PIN1)) && event(TERM_BANK_TX_PIN(TX_2,PIN2)) ==> PIN1 = PIN2 in process 1.
 -- Query inj-event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) ==> inj-event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3)) in process 1.
 Translating the process into Horn clauses...
 Completing...
@@ -1345,9 +1345,13 @@ Query(ies):
  - Query not (event(SecretPin(x_1)) && attacker(x_1)) is false.
  - Query not (event(BCommitWithC(a_1,PAN_3,TX_2,EAC_3)) && event(CRunningWithBank(a_1,PAN_3,TX_2,EAC_3))) is false.
  - Query not (event(CAccept(PAN_3,TX_2)) && event(BAccept(kbt_2,PAN_3,TX_2))) is false.
-Associated axiom(s):
- - Axiom event(ProcessingTransation(sessNonce1,TX_2)) && event(ProcessingTransation(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
- - Axiom event(TerminalProcessingTransaction(sessNonce1,TX_2)) && event(TerminalProcessingTransaction(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
- - Axiom event(TERM_CARD_TX_PIN(TX_2,PIN1)) && event(TERM_BANK_TX_PIN(TX_2,PIN2)) ==> PIN1 = PIN2 in process 1.
+Associated restriction(s):
+ - Restriction event(ProcessingTransation(sessNonce1,TX_2)) && event(ProcessingTransation(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
+ - Restriction event(TerminalProcessingTransaction(sessNonce1,TX_2)) && event(TerminalProcessingTransaction(sessNonce2,TX_2)) ==> sessNonce1 = sessNonce2 in process 1.
+ - Restriction event(TERM_CARD_TX_PIN(TX_2,PIN1)) && event(TERM_BANK_TX_PIN(TX_2,PIN2)) ==> PIN1 = PIN2 in process 1.
 
 --------------------------------------------------------------
+
+
+real    0m46.723s
+

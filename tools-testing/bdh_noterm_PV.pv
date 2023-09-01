@@ -1,4 +1,4 @@
-(*cannot be proved*)
+(* cannot be proved, time: 1m23.902s *)
 
 free cout, card, term: channel.
 

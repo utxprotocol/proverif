@@ -1,4 +1,5 @@
-(* even for 2 sessinons observational equivalence cannot be proved *)
+(* observational equivalence cannot be proved for 2 sessinons, time: 33m29.692s *)
+(* but also an attack cannot be discovered *)
 
 free cout, card, term: channel.
 

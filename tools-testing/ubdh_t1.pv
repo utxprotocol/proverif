@@ -1,4 +1,4 @@
-(*true*)
+(* TRUE, time: 26m7.321s *)
 
 set allowDiffPatterns = true.
 

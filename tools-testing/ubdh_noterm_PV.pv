@@ -1,4 +1,4 @@
-(* TRUE *)
+(* TRUE, time: 16m56.405s *)
 
 free cout, card, term: channel.
  

@@ -1,6 +1,6 @@
 (* The terminal ignores checking the legitimacy of the card // line 248 *)
 
-(* RUNNING TIME  FOR ALL PROPERTIES: 120+ minutes *)
+(* RUNNING TIME  FOR ALL PROPERTIES: 95m58.004s *)
 
 free cuser, cout, card, term, bank: channel.
 
@@ -165,17 +165,17 @@ event TERM_BANK_TX_PIN(bitstring, text).
 
 
 (* EVERY TRANSACTION CAN BE TREATED AT MOST ONCE *)
-axiom sessNonce1, sessNonce2:bitstring, TX: bitstring;
+restriction sessNonce1, sessNonce2:bitstring, TX: bitstring;
   event (ProcessingTransation(sessNonce1, TX)) && event (ProcessingTransation(sessNonce2, TX))
     ==> sessNonce1 = sessNonce2.
 
-axiom sessNonce1, sessNonce2:bitstring, TX: bitstring;
+restriction sessNonce1, sessNonce2:bitstring, TX: bitstring;
       event (TerminalProcessingTransaction(sessNonce1, TX))
       && event (TerminalProcessingTransaction(sessNonce2, TX))
         ==> sessNonce1 = sessNonce2.
 
 (* SAME PIN TRANSMITTED TO CARD AND TO BANK *)
-axiom PIN1, PIN2:text, TX: bitstring;
+restriction PIN1, PIN2:text, TX: bitstring;
               event (TERM_CARD_TX_PIN(TX, PIN1))
               && event (TERM_BANK_TX_PIN(TX, PIN2))
                 ==> PIN1 = PIN2.

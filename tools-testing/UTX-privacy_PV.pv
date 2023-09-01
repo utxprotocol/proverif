@@ -1,4 +1,4 @@
-(* freezes *)
+(* running forever *)
 
 free cuser, cout, card, term, bank: channel.
 
